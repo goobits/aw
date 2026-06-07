@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -225,7 +226,7 @@ fn launch_session(
         ]);
     }
     if session_exists(session)? {
-        return zellij_passthrough(&["attach", "--force-run-commands", session]);
+        return attach_existing_session(session);
     }
     zellij_passthrough(&[
         "--layout",
@@ -235,6 +236,25 @@ fn launch_session(
         session,
         "--create",
     ])
+}
+
+fn attach_existing_session(session: &str) -> Result<i32> {
+    let output = Command::new("zellij")
+        .args(["attach", "--force-run-commands", session])
+        .output()?;
+    if output.status.success() {
+        io::stdout().write_all(&output.stdout)?;
+        io::stderr().write_all(&output.stderr)?;
+        return Ok(0);
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    if stderr.contains("You are trying to attach to the current session") {
+        return Ok(0);
+    }
+    io::stdout().write_all(&output.stdout)?;
+    io::stderr().write_all(&output.stderr)?;
+    Ok(output.status.code().unwrap_or(1))
 }
 
 fn session_tab_order_command(args: &[String]) -> Result<i32> {

@@ -96,6 +96,10 @@ if [[ "${1:-}" == "delete-session" ]]; then
 fi
 
 if [[ "${1:-}" == "attach" || "${1:-}" == "--layout" ]]; then
+  if [[ "${1:-}" == "attach" && "${FAKE_ZELLIJ_ATTACH_CURRENT_PANIC:-0}" == "1" ]]; then
+    printf 'thread '\''main'\'' panicked at src/commands.rs:858:25:\nYou are trying to attach to the current session ("%s"). This is not supported.\n' "${@: -1}" >&2
+    exit 101
+  fi
   if [[ "${FAKE_ZELLIJ_FAIL_ON_ATTACH:-0}" == "1" ]]; then
     printf 'workspace assignment must not attach or create a zellij client\n' >&2
     exit 1
