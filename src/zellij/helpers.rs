@@ -169,8 +169,9 @@ fn launch_session(
             1,
         ));
     }
-    let inside_zellij = env::var("ZELLIJ").is_ok_and(|value| !value.is_empty() && value != "0");
     let current_session = env::var("ZELLIJ_SESSION_NAME").unwrap_or_default();
+    let inside_zellij = env::var("ZELLIJ").is_ok_and(|value| !value.is_empty() && value != "0")
+        || !current_session.is_empty();
     if inside_zellij
         && !current_session.is_empty()
         && current_session != session

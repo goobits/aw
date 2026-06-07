@@ -58,6 +58,28 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
     );
 
     let output = Command::new(bin.join("zwork"))
+        .args(["test-profile", "backend", "backend-test", "/workspace"])
+        .env("PATH", &base_path)
+        .env("HOME", tmp.join("home"))
+        .env_remove("ZELLIJ")
+        .env("ZELLIJ_SESSION_NAME", "backend-test")
+        .env("FAKE_ZELLIJ_FAIL_ON_ATTACH", "1")
+        .env("FAKE_ZELLIJ_FAIL_ON_SWITCH", "1")
+        .env("ZELLIJ_PROFILE_DIR", tmp.join("profiles"))
+        .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env(
+            "FAKE_ZELLIJ_ORDER_ARGS",
+            tmp.join("session-name-only-order.txt"),
+        )
+        .output()
+        .expect("run zwork with session name only");
+    assert_success("session-name-only zwork", &output);
+    assert_eq!(
+        read(tmp.join("session-name-only-order.txt")).trim_end(),
+        "backend-test\neditor\nserver\ndatabase\nscratch"
+    );
+
+    let output = Command::new(bin.join("zwork"))
         .args(["test-profile", "frontend", "frontend-test", "/workspace"])
         .env("PATH", &base_path)
         .env("HOME", tmp.join("home"))
