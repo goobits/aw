@@ -238,12 +238,22 @@ fn launch_session(
         "--force-run-commands",
         session,
         "--create",
+        "options",
+        "--mirror-session",
+        "true",
     ])
 }
 
 fn attach_existing_session(session: &str) -> Result<i32> {
     let status = Command::new("zellij")
-        .args(["attach", "--force-run-commands", session])
+        .args([
+            "attach",
+            "--force-run-commands",
+            session,
+            "options",
+            "--mirror-session",
+            "true",
+        ])
         .status()?;
     Ok(status.code().unwrap_or(1))
 }

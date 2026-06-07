@@ -117,7 +117,7 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
     );
     assert_eq!(
         read(tmp.join("stripped-env-attach.txt")).trim_end(),
-        "attach --force-run-commands backend-test"
+        "attach --force-run-commands backend-test options --mirror-session true"
     );
 
     let output = Command::new(bin.join("zwork"))
@@ -233,7 +233,7 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
     assert_eq!(
         read(tmp.join("repair-launch-args.txt")).trim_end(),
         format!(
-            "--layout {} attach --force-run-commands fresh-session --create",
+            "--layout {} attach --force-run-commands fresh-session --create options --mirror-session true",
             tmp.join("layout.kdl").display()
         )
     );
