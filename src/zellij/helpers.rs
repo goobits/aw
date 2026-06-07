@@ -212,8 +212,7 @@ fn launch_session(
         let _ = watcher_command(&["--start".to_string()]);
     }
     if inside_zellij && current_session == session {
-        println!("Already in session {session}");
-        return Ok(0);
+        return focus_existing_session(session);
     }
     if inside_zellij {
         return zellij_passthrough(&[
@@ -251,12 +250,15 @@ fn attach_existing_session(session: &str) -> Result<i32> {
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     if stderr.contains("You are trying to attach to the current session") {
-        println!("Already in session {session}");
-        return Ok(0);
+        return focus_existing_session(session);
     }
     io::stdout().write_all(&output.stdout)?;
     io::stderr().write_all(&output.stderr)?;
     Ok(output.status.code().unwrap_or(1))
+}
+
+fn focus_existing_session(session: &str) -> Result<i32> {
+    zellij_passthrough(&["action", "switch-session", session])
 }
 
 fn session_tab_order_command(args: &[String]) -> Result<i32> {

@@ -45,7 +45,10 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
         .env("HOME", tmp.join("home"))
         .env("ZELLIJ", "1")
         .env("ZELLIJ_SESSION_NAME", "backend-test")
-        .env("FAKE_ZELLIJ_FAIL_ON_SWITCH", "1")
+        .env(
+            "FAKE_ZELLIJ_SWITCH_ARGS",
+            tmp.join("backend-switch-session.txt"),
+        )
         .env("ZELLIJ_PROFILE_DIR", tmp.join("profiles"))
         .env("FAKE_ZELLIJ_TABS", &tabs)
         .env("FAKE_ZELLIJ_ORDER_ARGS", tmp.join("backend-order.txt"))
@@ -56,6 +59,10 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
         read(tmp.join("backend-order.txt")).trim_end(),
         "backend-test\neditor\nserver\ndatabase\nscratch"
     );
+    assert_eq!(
+        read(tmp.join("backend-switch-session.txt")).trim_end(),
+        "action switch-session backend-test"
+    );
 
     let output = Command::new(bin.join("zwork"))
         .args(["test-profile", "backend", "backend-test", "/workspace"])
@@ -64,7 +71,10 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
         .env_remove("ZELLIJ")
         .env("ZELLIJ_SESSION_NAME", "backend-test")
         .env("FAKE_ZELLIJ_FAIL_ON_ATTACH", "1")
-        .env("FAKE_ZELLIJ_FAIL_ON_SWITCH", "1")
+        .env(
+            "FAKE_ZELLIJ_SWITCH_ARGS",
+            tmp.join("session-name-only-switch-session.txt"),
+        )
         .env("ZELLIJ_PROFILE_DIR", tmp.join("profiles"))
         .env("FAKE_ZELLIJ_TABS", &tabs)
         .env(
@@ -78,6 +88,10 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
         read(tmp.join("session-name-only-order.txt")).trim_end(),
         "backend-test\neditor\nserver\ndatabase\nscratch"
     );
+    assert_eq!(
+        read(tmp.join("session-name-only-switch-session.txt")).trim_end(),
+        "action switch-session backend-test"
+    );
 
     let output = Command::new(bin.join("zwork"))
         .args(["test-profile", "backend", "backend-test", "/workspace"])
@@ -87,6 +101,10 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
         .env_remove("ZELLIJ_SESSION_NAME")
         .env("FAKE_ZELLIJ_SESSIONS", "backend-test")
         .env("FAKE_ZELLIJ_ATTACH_CURRENT_PANIC", "1")
+        .env(
+            "FAKE_ZELLIJ_SWITCH_ARGS",
+            tmp.join("stripped-env-switch-session.txt"),
+        )
         .env("ZELLIJ_PROFILE_DIR", tmp.join("profiles"))
         .env("FAKE_ZELLIJ_TABS", &tabs)
         .env("FAKE_ZELLIJ_ORDER_ARGS", tmp.join("stripped-env-order.txt"))
@@ -97,6 +115,10 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
         read(tmp.join("stripped-env-order.txt")).trim_end(),
         "backend-test\neditor\nserver\ndatabase\nscratch"
     );
+    assert_eq!(
+        read(tmp.join("stripped-env-switch-session.txt")).trim_end(),
+        "action switch-session backend-test"
+    );
 
     let output = Command::new(bin.join("zwork"))
         .args(["test-profile", "frontend", "frontend-test", "/workspace"])
@@ -104,7 +126,10 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
         .env("HOME", tmp.join("home"))
         .env("ZELLIJ", "1")
         .env("ZELLIJ_SESSION_NAME", "frontend-test")
-        .env("FAKE_ZELLIJ_FAIL_ON_SWITCH", "1")
+        .env(
+            "FAKE_ZELLIJ_SWITCH_ARGS",
+            tmp.join("frontend-switch-session.txt"),
+        )
         .env("ZELLIJ_PROFILE_DIR", tmp.join("profiles"))
         .env("FAKE_ZELLIJ_TABS", &tabs)
         .env("FAKE_ZELLIJ_ORDER_ARGS", tmp.join("frontend-order.txt"))
@@ -114,6 +139,10 @@ fn zwork_orders_tabs_refuses_cross_session_and_repairs_shell_paths() {
     assert_eq!(
         read(tmp.join("frontend-order.txt")).trim_end(),
         "frontend-test\npreview\ndocs\nscratch"
+    );
+    assert_eq!(
+        read(tmp.join("frontend-switch-session.txt")).trim_end(),
+        "action switch-session frontend-test"
     );
 
     let output = Command::new(bin.join("zwork"))
