@@ -1,0 +1,133 @@
+#compdef aw
+
+_aw_config_dir() {
+  if [[ -n "${AW_CONFIG_DIR:-}" && -f "$AW_CONFIG_DIR/profile.conf" ]]; then
+    printf '%s' "$AW_CONFIG_DIR"
+    return
+  fi
+
+  if [[ -f "$PWD/config/aw/profile.conf" ]]; then
+    printf '%s' "$PWD/config/aw"
+    return
+  fi
+
+  local default_profile="$HOME/.local/share/agent-workspace/default-profile"
+  if [[ -f "$default_profile" ]]; then
+    local profile_name
+    profile_name="$(sed -n '1p' "$default_profile")"
+    printf '%s/.local/share/agent-workspace/profiles/%s' "$HOME" "$profile_name"
+  fi
+}
+
+_aw_workspaces() {
+  local config_dir tabs_file
+  config_dir="$(_aw_config_dir)"
+  [[ -d "$config_dir" ]] || return
+
+  for tabs_file in "$config_dir"/*.tabs; do
+    [[ -f "$tabs_file" ]] || continue
+    compadd -- "$(basename "$tabs_file" .tabs)"
+  done
+}
+
+_aw_tabs() {
+  local workspace="$1" config_dir tabs_file line
+  config_dir="$(_aw_config_dir)"
+  tabs_file="$config_dir/$workspace.tabs"
+  [[ -f "$tabs_file" ]] || return
+
+  while IFS=$'\t' read -r line _cwd; do
+    [[ -n "$line" ]] && compadd -- "$line"
+  done < "$tabs_file"
+}
+
+_aw() {
+  local -a commands tab_commands commit_commands
+  commands=(help install setup doctor migrate list create refresh rename remove tab commit ps kill)
+  tab_commands=(list add move rename remove refresh)
+  commit_commands=(setup add status doctor wait poke)
+
+  case "${words[2]:-}" in
+    commit)
+      case "${words[3]:-}" in
+        "")
+          compadd -- "${commit_commands[@]}"
+          ;;
+        setup)
+          if [[ "$CURRENT" -eq 4 ]]; then
+            compadd -- --tab --session --agent --no-agent
+            _aw_workspaces
+          else
+            compadd -- --tab --session --agent --no-agent
+          fi
+          ;;
+        add)
+          compadd -- --check --verify --root --summary --owner --must-contain --must-not-contain --poke --wait --timeout --poll
+          _files
+          ;;
+        status|doctor)
+          compadd -- --root
+          ;;
+        wait)
+          compadd -- --root --timeout --poll
+          ;;
+        poke)
+          compadd -- git --root
+          ;;
+      esac
+      ;;
+    tab)
+      case "${words[3]:-}" in
+        "")
+          compadd -- "${tab_commands[@]}"
+          ;;
+        list|refresh)
+          [[ "$CURRENT" -eq 4 ]] && _aw_workspaces
+          ;;
+        add|move|remove)
+          if [[ "$CURRENT" -eq 4 ]]; then
+            _aw_workspaces
+          elif [[ "$CURRENT" -eq 5 ]]; then
+            _aw_tabs "${words[4]}"
+          fi
+          ;;
+        rename)
+          if [[ "$CURRENT" -eq 4 ]]; then
+            _aw_workspaces
+          elif [[ "$CURRENT" -eq 5 ]]; then
+            _aw_tabs "${words[4]}"
+          fi
+          ;;
+      esac
+      ;;
+    refresh|remove)
+      [[ "$CURRENT" -eq 3 ]] && _aw_workspaces
+      ;;
+    rename)
+      [[ "$CURRENT" -eq 3 ]] && _aw_workspaces
+      ;;
+    doctor)
+      [[ "$CURRENT" -eq 3 ]] && compadd -- repo --config
+      ;;
+    migrate)
+      if [[ "$CURRENT" -eq 3 ]]; then
+        compadd -- repo
+      elif [[ "${words[3]:-}" == "repo" ]]; then
+        compadd -- --dry-run
+      fi
+      ;;
+    kill)
+      [[ "$CURRENT" -eq 3 ]] && compadd -- $(zellij list-sessions -n 2>/dev/null | awk '{ print $1 }')
+      ;;
+    *)
+      if [[ "$CURRENT" -eq 2 ]]; then
+        compadd -- "${commands[@]}"
+        _aw_workspaces
+      elif [[ "$CURRENT" -gt 2 ]]; then
+        compadd -- -s --session -r --root
+      fi
+      ;;
+  esac
+}
+
+_aw "$@"
