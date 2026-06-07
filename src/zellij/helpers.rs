@@ -1,6 +1,5 @@
 use std::env;
 use std::fs;
-use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -170,6 +169,8 @@ fn launch_session(
             1,
         ));
     }
+    let original_zellij = env::var_os("ZELLIJ");
+    let original_session_name = env::var_os("ZELLIJ_SESSION_NAME");
     let current_session = env::var("ZELLIJ_SESSION_NAME").unwrap_or_default();
     let inside_zellij = env::var("ZELLIJ").is_ok_and(|value| !value.is_empty() && value != "0")
         || !current_session.is_empty();
@@ -210,6 +211,8 @@ fn launch_session(
         env::set_var("ZELLIJ", "1");
         env::set_var("ZELLIJ_SESSION_NAME", session);
         let _ = watcher_command(&["--start".to_string()]);
+        restore_env_var("ZELLIJ", original_zellij.as_deref());
+        restore_env_var("ZELLIJ_SESSION_NAME", original_session_name.as_deref());
     }
     if inside_zellij && current_session == session {
         return focus_existing_session(session);
@@ -239,26 +242,21 @@ fn launch_session(
 }
 
 fn attach_existing_session(session: &str) -> Result<i32> {
-    let output = Command::new("zellij")
+    let status = Command::new("zellij")
         .args(["attach", "--force-run-commands", session])
-        .output()?;
-    if output.status.success() {
-        io::stdout().write_all(&output.stdout)?;
-        io::stderr().write_all(&output.stderr)?;
-        return Ok(0);
-    }
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    if stderr.contains("You are trying to attach to the current session") {
-        return focus_existing_session(session);
-    }
-    io::stdout().write_all(&output.stdout)?;
-    io::stderr().write_all(&output.stderr)?;
-    Ok(output.status.code().unwrap_or(1))
+        .status()?;
+    Ok(status.code().unwrap_or(1))
 }
 
 fn focus_existing_session(session: &str) -> Result<i32> {
     zellij_passthrough(&["action", "switch-session", session])
+}
+
+fn restore_env_var(key: &str, value: Option<&std::ffi::OsStr>) {
+    match value {
+        Some(value) => env::set_var(key, value),
+        None => env::remove_var(key),
+    }
 }
 
 fn session_tab_order_command(args: &[String]) -> Result<i32> {

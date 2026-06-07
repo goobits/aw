@@ -100,6 +100,10 @@ if [[ "${1:-}" == "attach" || "${1:-}" == "--layout" ]]; then
     printf 'thread '\''main'\'' panicked at src/commands.rs:858:25:\nYou are trying to attach to the current session ("%s"). This is not supported.\n' "${@: -1}" >&2
     exit 101
   fi
+  if [[ "${FAKE_ZELLIJ_FAIL_ON_LAUNCH_ENV_LEAK:-0}" == "1" && ( -n "${ZELLIJ:-}" || -n "${ZELLIJ_SESSION_NAME:-}" ) ]]; then
+    printf 'zellij launch inherited ZELLIJ=%s ZELLIJ_SESSION_NAME=%s\n' "${ZELLIJ:-}" "${ZELLIJ_SESSION_NAME:-}" >&2
+    exit 1
+  fi
   if [[ "${FAKE_ZELLIJ_FAIL_ON_ATTACH:-0}" == "1" ]]; then
     printf 'workspace assignment must not attach or create a zellij client\n' >&2
     exit 1
