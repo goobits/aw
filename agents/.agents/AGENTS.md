@@ -105,6 +105,7 @@ Sync:
 - `x-docs-style` (`.agents/skills/x-docs-style/SKILL.md`): restyle READMEs/docs for clean, scannable, professional presentation without changing facts.
 - `x-update-changelog` (`.agents/skills/x-update-changelog/SKILL.md`): update `[Unreleased]` and cutoff marker.
 - `x-sync-docs` (`.agents/skills/x-sync-docs/SKILL.md`): sync AGENTS, skills, READMEs, proposals, runbooks, stale refs.
+- `x-version-source` (`.agents/skills/x-version-source/SKILL.md`): remove hardcoded version drift and read versions from owning manifests.
 
 Consolidate:
 
@@ -122,10 +123,12 @@ Actions:
 - `x-do` (`.agents/skills/x-do/SKILL.md`): run all approved phases until done or genuinely blocked.
 - `x-investigate` (`.agents/skills/x-investigate/SKILL.md`): choose the best evidence path before coding.
 - `x-lint-cleanup` (`.agents/skills/x-lint-cleanup/SKILL.md`): lint/type/check cleanup without hiding errors.
+- `x-logging` (`.agents/skills/x-logging/SKILL.md`): design, audit, or refactor structured contextual logging.
 - `x-optimize-code` (`.agents/skills/x-optimize-code/SKILL.md`): evidence-first performance optimization.
 - `x-owner-checklist` (`.agents/skills/x-owner-checklist/SKILL.md`): concise human-only values, approvals, and decisions.
 - `x-layman` (`.agents/skills/x-layman/SKILL.md`): layman's explanation of prior technical output.
 - `x-proposal` (`.agents/skills/x-proposal/SKILL.md`): compact file-change proposal with LOC and wins.
+- `x-server-ports` (`.agents/skills/x-server-ports/SKILL.md`): fixed-port server lifecycle, PID ownership, and port-drift cleanup.
 - `x-system-health` (`.agents/skills/x-system-health/SKILL.md`): CPU/memory/load/stale process report and requested cleanup.
 
 ## Debug Inputs
