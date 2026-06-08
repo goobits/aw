@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use crate::error::{AwError, Result};
 use crate::paths::path_string;
 
-const CANONICAL_AGENTS: &str = "infra/agent-workspace/agents/.agents";
+const CANONICAL_AGENTS: &str = "infra/aw/agents/.agents";
 
 pub fn run_doctor(args: &[String]) -> Result<i32> {
     if !args.is_empty() {
@@ -16,8 +16,8 @@ pub fn run_doctor(args: &[String]) -> Result<i32> {
 pub fn doctor_repo() -> Result<i32> {
     let root = std::env::current_dir()?;
     let mut failed = false;
-    failed |= check_file(&root, "infra/agent-workspace/Cargo.toml");
-    failed |= check_file(&root, "infra/agent-workspace/agents/.agents/AGENTS.md");
+    failed |= check_file(&root, "infra/aw/Cargo.toml");
+    failed |= check_file(&root, "infra/aw/agents/.agents/AGENTS.md");
     failed |= check_file(&root, "AGENTS.md");
     failed |= check_file(&root, ".agents.local/project.md");
     failed |= check_symlink(&root, ".agents", CANONICAL_AGENTS);
@@ -75,7 +75,7 @@ fn ensure_agents_bundle(root: &Path) -> Result<()> {
         return Ok(());
     }
     Err(AwError::new(
-        "aw repo migrate failed: missing infra/agent-workspace/agents/.agents/AGENTS.md",
+        "aw repo migrate failed: missing infra/aw/agents/.agents/AGENTS.md",
         1,
     ))
 }

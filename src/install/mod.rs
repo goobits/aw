@@ -50,10 +50,10 @@ pub fn install_workspace_setup() -> Result<i32> {
 
 pub fn install_repo_adapters(dry_run: bool) -> Result<()> {
     let root = env::current_dir()?;
-    let workspace_root = root.join("infra/agent-workspace");
+    let workspace_root = root.join("infra/aw");
     if !workspace_root.join("agents/.agents/AGENTS.md").is_file() {
         return Err(AwError::new(
-            "aw install failed: infra/agent-workspace/agents/.agents/AGENTS.md is missing",
+            "aw install failed: infra/aw/agents/.agents/AGENTS.md is missing",
             1,
         ));
     }
@@ -84,19 +84,19 @@ const REPO_ADAPTER_FILES: &[RepoAdapterFile] = &[
     RepoAdapterFile {
         file: "AGENTS.md",
         contents: ROOT_AGENTS_TEMPLATE,
-        source: "infra/agent-workspace/agents/.agents/templates/root-AGENTS.md",
+        source: "infra/aw/agents/.agents/templates/root-AGENTS.md",
     },
     RepoAdapterFile {
         file: ".agents.local/project.md",
         contents: PROJECT_TEMPLATE,
-        source: "infra/agent-workspace/agents/.agents/templates/project.md",
+        source: "infra/aw/agents/.agents/templates/project.md",
     },
 ];
 
 const REPO_ADAPTER_LINKS: &[RepoAdapterLink] = &[
     RepoAdapterLink {
         link: ".agents",
-        target: "infra/agent-workspace/agents/.agents",
+        target: "infra/aw/agents/.agents",
     },
     RepoAdapterLink {
         link: "CLAUDE.md",
@@ -134,6 +134,14 @@ fn ensure_repo_symlink(root: &Path, item: &RepoAdapterLink, dry_run: bool) -> Re
         Ok(metadata) => {
             if metadata.file_type().is_symlink() && link_target_matches(&link_path, item.target) {
                 println!("ok      {} -> {}", item.link, item.target);
+            } else if metadata.file_type().is_symlink() {
+                if dry_run {
+                    println!("would   {} -> {}", item.link, item.target);
+                    return Ok(());
+                }
+                fs::remove_file(&link_path)?;
+                create_symlink(item.target, &link_path)?;
+                println!("linked  {} -> {}", item.link, item.target);
             } else {
                 println!("keep    {} already exists; not overwritten", item.link);
             }

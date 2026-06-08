@@ -9,7 +9,7 @@ use std::time::Instant;
 
 use crate::error::{AwError, Result};
 
-const DEFAULT_GIT_MEASURE_PATH: &str = "infra/agent-workspace";
+const DEFAULT_GIT_MEASURE_PATH: &str = "infra/aw";
 
 pub fn run(args: &[String]) -> Result<i32> {
     let Some((command, rest)) = args.split_first() else {

@@ -21,9 +21,9 @@ pnpm run aw -- install
 If `zellij` is missing, this downloads pinned Zellij `0.44.3` for your
 architecture. Set `ZELLIJ_INSTALL_BINARY=0` to skip binary installation. In
 repos without the package script, use `cargo run --manifest-path
-infra/agent-workspace/Cargo.toml -- install` instead.
+infra/aw/Cargo.toml -- install` instead.
 
-For a consuming repo that includes `infra/agent-workspace`, make Agent
+For a consuming repo that includes `infra/aw`, make Agent
 Workspace the one-stop setup owner:
 
 ```bash
@@ -38,13 +38,13 @@ with `aw repo doctor`.
 ### 2. Update In A Consuming Repo
 
 Agent Workspace is distributed as a pinned Git submodule at
-`infra/agent-workspace`. Updating a repo means fast-forwarding that submodule,
+`infra/aw`. Updating a repo means fast-forwarding that submodule,
 refreshing the local install, checking the result, and committing the parent
 repo's submodule pointer.
 
 ```bash
 pnpm run aw:update
-git add infra/agent-workspace
+git add infra/aw
 git commit -m "chore: update agent workspace"
 ```
 
@@ -52,11 +52,11 @@ If the consuming repo does not provide `pnpm run aw:update`, run the same steps
 manually:
 
 ```bash
-git -C infra/agent-workspace pull --ff-only
+git -C infra/aw pull --ff-only
 pnpm run aw:install
 pnpm run aw -- doctor
 pnpm run aw -- repo doctor
-git add infra/agent-workspace
+git add infra/aw
 git commit -m "chore: update agent workspace"
 ```
 
@@ -66,12 +66,12 @@ Agent Workspace owns the shared agent bundle too:
 repo/
   AGENTS.md                    root adapter
   CLAUDE.md -> AGENTS.md        Claude-compatible adapter
-  .agents -> infra/agent-workspace/agents/.agents
+  .agents -> infra/aw/agents/.agents
   .agents.local/project.md      repo-specific commands, ports, and policies
   .claude/skills -> ../.agents/skills
 ```
 
-Shared behavior belongs in `infra/agent-workspace/agents/.agents`.
+Shared behavior belongs in `infra/aw/agents/.agents`.
 Repo-specific facts stay in `.agents.local/project.md`.
 
 ### 3. Create A Workspace
@@ -319,14 +319,14 @@ Use the measurement tools to prove workspace changes helped instead of guessing.
 
 ```bash
 aw repo measure-git
-aw repo measure-git infra/agent-workspace
+aw repo measure-git infra/aw
 aw repo probe-git-config
-aw repo probe-git-config --path infra/agent-workspace
-aw repo probe-git-config --path infra/agent-workspace --apply
+aw repo probe-git-config --path infra/aw
+aw repo probe-git-config --path infra/aw --apply
 ```
 
 `measure-git` prints full and path-scoped Git timings. Pass a path to measure a
-specific slice. Without a path, it measures `infra/agent-workspace`.
+specific slice. Without a path, it measures `infra/aw`.
 
 `probe-git-config` measures candidate Git config values without writing them.
 It writes only winning values when explicitly run with `--apply`.
@@ -452,7 +452,7 @@ scroll focus.
 
 ## 🧰 Under The Hood
 
-`aw` is built from the Rust crate in `infra/agent-workspace` and
+`aw` is built from the Rust crate in `infra/aw` and
 installed with the Zellij helper bundle. The installer puts only public
 commands into `~/.local/bin/`. Treat these as the public interface:
 

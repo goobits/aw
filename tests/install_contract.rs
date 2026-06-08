@@ -116,11 +116,11 @@ fn install_repo_dry_run_reports_aw_adapters() {
     let home = TestHome::new("install-repo-dry-run");
     let repo = home.root.join("repo");
     temp::write(
-        repo.join("infra/agent-workspace/agents/.agents/AGENTS.md"),
+        repo.join("infra/aw/agents/.agents/AGENTS.md"),
         "# shared agents\n",
     );
     temp::write(
-        repo.join("infra/agent-workspace/Cargo.toml"),
+        repo.join("infra/aw/Cargo.toml"),
         "[package]\nname = \"aw\"\n",
     );
 
@@ -134,7 +134,7 @@ fn install_repo_dry_run_reports_aw_adapters() {
 
     assert_eq!(
         stdout(&output),
-        "would   AGENTS.md from infra/agent-workspace/agents/.agents/templates/root-AGENTS.md\nwould   .agents.local/project.md from infra/agent-workspace/agents/.agents/templates/project.md\nwould   .agents -> infra/agent-workspace/agents/.agents\nwould   CLAUDE.md -> AGENTS.md\nwould   .claude/skills -> ../.agents/skills\ndone    infra/agent-workspace"
+        "would   AGENTS.md from infra/aw/agents/.agents/templates/root-AGENTS.md\nwould   .agents.local/project.md from infra/aw/agents/.agents/templates/project.md\nwould   .agents -> infra/aw/agents/.agents\nwould   CLAUDE.md -> AGENTS.md\nwould   .claude/skills -> ../.agents/skills\ndone    infra/aw"
     );
     assert!(!repo.join("AGENTS.md").exists());
     assert!(!repo.join(".agents").exists());
@@ -163,11 +163,11 @@ fn install_repo_auto_config_creates_adapters_and_profile() {
     let home = TestHome::new("install-repo-config");
     let repo = home.root.join("repo");
     temp::write(
-        repo.join("infra/agent-workspace/agents/.agents/AGENTS.md"),
+        repo.join("infra/aw/agents/.agents/AGENTS.md"),
         "# shared agents\n",
     );
     temp::write(
-        repo.join("infra/agent-workspace/Cargo.toml"),
+        repo.join("infra/aw/Cargo.toml"),
         "[package]\nname = \"aw\"\n",
     );
     temp::write(
@@ -190,7 +190,7 @@ fn install_repo_auto_config_creates_adapters_and_profile() {
     assert!(repo.join(".agents.local/project.md").is_file());
     assert_eq!(
         fs::read_link(repo.join(".agents")).unwrap(),
-        std::path::Path::new("infra/agent-workspace/agents/.agents")
+        std::path::Path::new("infra/aw/agents/.agents")
     );
     assert_eq!(
         fs::read_link(repo.join("CLAUDE.md")).unwrap(),
@@ -205,4 +205,44 @@ fn install_repo_auto_config_creates_adapters_and_profile() {
         .join(".local/share/agent-workspace/profiles/demo/front.tabs")
         .is_file());
     assert!(stdout(&output).contains("Installed Zellij profile demo."));
+}
+
+#[cfg(unix)]
+#[test]
+fn install_repo_repairs_stale_managed_symlink() {
+    let home = TestHome::new("install-repo-stale-link");
+    let repo = home.root.join("repo");
+    temp::write(
+        repo.join("infra/aw/agents/.agents/AGENTS.md"),
+        "# shared agents\n",
+    );
+    temp::write(
+        repo.join("infra/aw/Cargo.toml"),
+        "[package]\nname = \"aw\"\n",
+    );
+    temp::write(
+        repo.join("config/aw/profile.conf"),
+        "name=demo\nroot=.\ndefault_workspace=front\n",
+    );
+    temp::write(repo.join("config/aw/front.tabs"), "app\ngit\nscratch\n");
+    std::os::unix::fs::symlink(
+        "infra/agent-workspace/agents/.agents",
+        repo.join(".agents"),
+    )
+    .unwrap();
+
+    let output = home
+        .command(support::command::aw())
+        .env("ZELLIJ_INSTALL_BINARY", "0")
+        .env("ZELLIJ_INSTALL_SHELL_RC", "0")
+        .current_dir(&repo)
+        .args(["install", "--repo"])
+        .output()
+        .expect("run aw install with stale symlink");
+    assert_success("aw install --repo", &output);
+
+    assert_eq!(
+        fs::read_link(repo.join(".agents")).unwrap(),
+        std::path::Path::new("infra/aw/agents/.agents")
+    );
 }

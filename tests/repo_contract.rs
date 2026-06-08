@@ -21,7 +21,7 @@ fn doctor_repo_reports_ready_adapters_and_git_tab() {
 
     assert_success("aw repo doctor", &output);
     let stdout = stdout(&output);
-    assert!(stdout.contains("ok      .agents -> infra/agent-workspace/agents/.agents"));
+    assert!(stdout.contains("ok      .agents -> infra/aw/agents/.agents"));
     assert!(stdout.contains("ok      lowercase git tab"));
     assert!(stdout.contains("ok      repo adapters ready"));
 }
@@ -31,11 +31,11 @@ fn migrate_repo_creates_current_adapters() {
     let home = TestHome::new("repo-migrate");
     let repo = home.root.join("repo");
     temp::write(
-        repo.join("infra/agent-workspace/Cargo.toml"),
+        repo.join("infra/aw/Cargo.toml"),
         "[package]\nname = \"aw\"\n",
     );
     temp::write(
-        repo.join("infra/agent-workspace/agents/.agents/AGENTS.md"),
+        repo.join("infra/aw/agents/.agents/AGENTS.md"),
         "# shared agents\n",
     );
     temp::write(repo.join("AGENTS.md"), "# root\n");
@@ -55,11 +55,11 @@ fn migrate_repo_creates_current_adapters() {
 
     assert_success("aw repo migrate", &output);
     assert!(repo
-        .join("infra/agent-workspace/agents/.agents/AGENTS.md")
+        .join("infra/aw/agents/.agents/AGENTS.md")
         .is_file());
     assert_eq!(
         fs::read_link(repo.join(".agents")).unwrap(),
-        Path::new("infra/agent-workspace/agents/.agents")
+        Path::new("infra/aw/agents/.agents")
     );
     assert_eq!(
         fs::read_link(repo.join("CLAUDE.md")).unwrap(),
@@ -81,11 +81,11 @@ fn migrate_repo_creates_current_adapters() {
 
 fn write_ready_repo(repo: &Path) {
     temp::write(
-        repo.join("infra/agent-workspace/Cargo.toml"),
+        repo.join("infra/aw/Cargo.toml"),
         "[package]\nname = \"aw\"\n",
     );
     temp::write(
-        repo.join("infra/agent-workspace/agents/.agents/AGENTS.md"),
+        repo.join("infra/aw/agents/.agents/AGENTS.md"),
         "# shared\n",
     );
     temp::write(repo.join("AGENTS.md"), "# root\n");
@@ -93,7 +93,7 @@ fn write_ready_repo(repo: &Path) {
     temp::write(repo.join("config/aw/profile.conf"), "name=demo\n");
     temp::write(repo.join("config/aw/front.tabs"), "app\ngit\nscratch\n");
     symlink(
-        "infra/agent-workspace/agents/.agents",
+        "infra/aw/agents/.agents",
         &repo.join(".agents"),
     );
     symlink("AGENTS.md", &repo.join("CLAUDE.md"));
