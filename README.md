@@ -1,55 +1,97 @@
-# 🧭 aw: Zellij Workspaces
+# aw
 
-Reusable, zero-friction Zellij workspace tooling.
+Zero-friction Zellij workspaces for repos with many tabs, agents, and shared
+Git coordination.
 
-`aw` provides sane defaults for managing complex terminal environments. It lets
-you define project layouts in plain text, then handles session management,
-auto-linking, and layout generation for you.
+`aw` keeps project workspaces in plain text, installs portable agent adapters,
+opens repeatable Zellij sessions, and provides queue/owner tools for shared
+checkouts.
 
-The goal: **Clone a repo, type `aw`, and get to work.**
+## What It Gives You
 
-## 🚀 Getting Started
+| Area | What `aw` handles |
+|---|---|
+| Workspaces | Open, create, rename, remove, refresh, and list Zellij workspaces. |
+| Tabs | Add, move, rename, remove, and refresh live tabs from saved `*.tabs` files. |
+| Repo setup | Install shared agent adapters and repo-owned `config/aw` profiles. |
+| Agent work | Coordinate worker requests through a commit-owner queue. |
+| Maintenance | Doctor checks, generated cleanup, Git timing probes, and worktree helpers. |
 
-### 1. Install
+The goal is simple: clone a repo, run the setup once, then type `aw`.
 
-Install the shared tooling once. From this repository directory, run:
+## Install
+
+Install the shared tooling once from this repository:
 
 ```bash
+aw install
 pnpm run aw -- install
 ```
 
-If `zellij` is missing, this downloads pinned Zellij `0.44.3` for your
-architecture. Set `ZELLIJ_INSTALL_BINARY=0` to skip binary installation. In
-repos without the package script, use `cargo run --manifest-path
-infra/aw/Cargo.toml -- install` instead.
+If the consuming repo does not have package scripts, run the Rust binary
+directly:
 
-For a consuming repo that includes `infra/aw`, make Agent
-Workspace the one-stop setup owner:
+```bash
+cargo run --manifest-path infra/aw/Cargo.toml -- install
+```
+
+If `zellij` is missing, the installer downloads pinned Zellij `0.44.3` for
+supported platforms. Set `ZELLIJ_INSTALL_BINARY=0` to skip that step.
+
+Refresh a profile directly when needed:
+
+```bash
+aw setup --config config/aw
+```
+
+## Add aw To A Repo
+
+Consuming repos pin this project as a submodule at `infra/aw`.
 
 ```bash
 pnpm run aw:install
 ```
 
-`--repo` creates the portable agent adapters and installs the repo-owned
-`config/aw` profile. Use `pnpm run aw:install --dry-run` to preview adapter
-changes without writing files. Non-dry-run repo installs and migrations finish
-with `aw repo doctor`.
+Equivalent direct command:
 
-### 2. Update In A Consuming Repo
+```bash
+cargo run --manifest-path infra/aw/Cargo.toml -- install --repo
+```
 
-Agent Workspace is distributed as a pinned Git submodule at
-`infra/aw`. Updating a repo means fast-forwarding that submodule,
-refreshing the local install, checking the result, and committing the parent
-repo's submodule pointer.
+Use `--dry-run` before writing adapter files:
+
+```bash
+pnpm run aw:install --dry-run
+cargo run --manifest-path infra/aw/Cargo.toml -- install --repo --dry-run
+```
+
+Repo install creates or validates:
+
+```text
+AGENTS.md
+CLAUDE.md -> AGENTS.md
+.agents -> infra/aw/agents/.agents
+.agents.local/project.md
+.claude/skills -> ../.agents/skills
+config/aw/
+```
+
+Shared agent behavior belongs in `infra/aw/agents/.agents`. Repo-specific
+commands, ports, and policies belong in `.agents.local/project.md`.
+Codex discovers repo skills from `.agents/skills`; `.claude/skills` is only the
+Claude compatibility adapter.
+
+## Update aw
+
+Use the consuming repo's update script when available:
 
 ```bash
 pnpm run aw:update
 git add infra/aw
-git commit -m "chore: update agent workspace"
+git commit -m "chore: update aw"
 ```
 
-If the consuming repo does not provide `pnpm run aw:update`, run the same steps
-manually:
+Manual equivalent:
 
 ```bash
 git -C infra/aw pull --ff-only
@@ -57,246 +99,71 @@ pnpm run aw:install
 pnpm run aw -- doctor
 pnpm run aw -- repo doctor
 git add infra/aw
-git commit -m "chore: update agent workspace"
+git commit -m "chore: update aw"
 ```
 
-Agent Workspace owns the shared agent bundle too:
+## Daily Workspace Commands
 
-```text
-repo/
-  AGENTS.md                    root adapter
-  CLAUDE.md -> AGENTS.md        Claude-compatible adapter
-  .agents -> infra/aw/agents/.agents
-  .agents.local/project.md      repo-specific commands, ports, and policies
-  .claude/skills -> ../.agents/skills
-```
-
-Shared behavior belongs in `infra/aw/agents/.agents`.
-Repo-specific facts stay in `.agents.local/project.md`.
-
-### 3. Create A Workspace
-
-In any project directory, assign a workspace name to a comma-separated tab list.
-If `config/aw/` does not exist, `aw` creates the profile first.
+Create the first workspace. If `config/aw/` is missing, `aw` creates it.
 
 ```bash
-# Create a project profile with one workspace named main
 aw main=app,server,infra,scratch
-
-# Add another workspace
-aw front=tools,components,scratch
-
-# Rename a workspace
-aw rename front app-ui
-
-# Remove a workspace
-aw remove app-ui
-
-# Add or replace a workspace in an existing project
-aw back=infra,api,db
-
-# Open the workspace when you want a shell
-aw back
+aw main
 ```
 
-### 4. Daily Usage
-
-When a project has `config/aw/`, `aw` auto-detects it. You do not need to
-manually link or install profiles for normal repos.
+Common workspace commands:
 
 ```bash
-# Show available commands
-aw
-
-# Open a specific workspace
-aw front
-
-# Same as bare aw
-aw help
-
-# Create, add, or replace a local workspace, then sync a matching session
-aw now=tools,components,scratch
-
-# Open a workspace in a named session
-aw front -s sketch-api
-
-# Open a workspace with a different root directory
-aw front -r /custom/workspace/path
-
-# Combine flags; order does not matter
-aw front -s sketch-api -r /custom/workspace/path
-```
-
-### 5. Visibility And Management
-
-```bash
-aw list         # List available workspaces in the current project
-aw ps           # List running Zellij sessions
-aw kill <name>  # Kill a specific session
+aw                         # show help
+aw list                    # list workspaces
+aw front                   # open workspace
+aw front -s sketch-api     # open in a named session
+aw front -r /tmp/worktree  # open with a different root
+aw front=tools,ui,scratch  # create or replace workspace tabs
 aw create docs guide api scratch
 aw refresh front
-aw rename <old> <new>
-aw remove <workspace>
-aw doctor       # Validate install, profile config, and runtime tab order
-aw repo doctor  # Validate repo adapters, config/aw, and git tab
-aw repo migrate # Repair old repo adapter paths into the Agent Workspace layout
+aw rename front app-ui
+aw remove app-ui
 ```
 
-Shell completions are installed for zsh and bash. They complete commands,
-workspace names, known tab names, and commit queue flags from the current
-`config/aw` profile.
+When `config/aw/profile.conf` exists, `aw` auto-detects the project profile.
 
-### 6. Live Tab Management
+## Tabs And Sessions
 
-Workspace names can also manage their live Zellij tabs. Indexed tab specs use
-zero-based positions, so `keyboard@1` places `keyboard` at the second tab.
+Manage saved and live tabs with the `tab` namespace:
 
 ```bash
 aw tab list front
 aw tab add front keyboard
 aw tab add front keyboard@1
-aw tab remove front keyboard
 aw tab move front keyboard@1
 aw tab rename front keyboard keys
-aw refresh front
+aw tab remove front keyboard
+aw tab refresh front
 ```
 
-`aw refresh <workspace>` converges the live and saved session back to the
-workspace's `*.tabs` file: missing tabs are created, duplicate or out-of-profile
-tabs are removed, and configured tabs return to their saved order.
+`aw refresh <workspace>` converges a live session back to its `*.tabs` file:
+missing tabs are created, duplicate or out-of-profile tabs are removed, and
+configured tabs return to saved order.
 
-### 6. Shared-Checkout Tools
-
-Agent Workspace includes coordination tools for shared checkouts. These commands
-are mostly for agent workflows, not everyday human workspace opening.
-
-#### Commit Queue
-
-Use this queue when multiple workers share the same checkout. It serializes Git
-and package-manager mutations so nobody commits from a stale status view or
-races over package metadata. Shared-agent workspaces should include one
-lowercase `git` tab for the commit owner.
-
-Set up the commit-owner tab:
+Session commands:
 
 ```bash
-aw commit setup front --tab git --agent codex
-aw commit setup front --session sketch-api --tab git --agent codex
+aw ps
+aw kill <session>
 ```
 
-The setup command prepares the tab and can start the agent, but it does not
-consume queue items by itself. The commit-owner agent in the `git` tab becomes
-active when it receives `$x-commit next`; `aw commit poke git` sends that text
-to the tab.
+## Repo Maintenance
 
-Worker tabs use only the request/status front door:
+Validate setup:
 
 ```bash
-aw commit request "Describe the scoped change" path/to/file \
-  --check "targeted verification command" \
-  --poke git
-
-aw commit status
-aw commit doctor
-aw commit wait <request-id>
+aw doctor       # global install, profile, and runtime checks
+aw repo doctor  # repo adapters, config/aw, and lowercase git tab
+aw repo migrate # repair old adapter symlinks into the current layout
 ```
 
-After `--poke git`, the `git` tab should run `$x-commit next`, inspect the
-ticket, commit the scoped live paths when safe, and mark the ticket done or
-blocked. Worker tabs should not run `$x-commit next`; they submit requests,
-check status, and wait only for their own request when needed.
-
-Use `aw commit wait <request-id>` only for one ticket. There is intentionally
-no global wait command, because that would make a worker wait for unrelated
-queue items from other agents. `aw commit request ... --wait` waits only for the
-request it just created.
-
-Use `aw commit doctor` when the queue feels stuck. It gives the readable
-reason before anyone reaches for internal queue details.
-
-Advanced request flags are available when a ticket needs stronger metadata or
-fingerprint checks:
-
-```bash
-aw commit request "Update docs" README.md \
-  --check "pnpm test" \
-  --must-contain "Expected text" \
-  --must-not-contain "Stale text" \
-  --poke git
-```
-
-Fingerprint flags intentionally make stale tickets block until the commit owner
-rechecks, blocks, closes, or replaces them. Avoid fingerprint flags for broad
-directory tickets that will likely receive later same-scope follow-up edits.
-
-If you use a custom queue root, pass `--root <queue-root>` to both the producer
-and the `git` tab command.
-
-```bash
-aw commit request "Update docs" README.md --root /tmp/commit-queue --poke git
-aw commit poke git --root /tmp/commit-queue
-```
-
-#### Owner Internals
-
-`aw owner git` and `aw owner pkg` are commit-owner internals, not worker
-instructions. Worker tabs should not run final commits, staging, repair, or
-package mutations directly.
-
-The commit owner may use owner internals for scoped commits, repair, chmod,
-fetch/push, package mutations, and submodule setup after reading the live local
-policy. The commit owner may clear stale queue or `.git/index.lock` files only
-after checking that no active Git, package-manager, or queue owner process is
-still using the checkout. Worker tabs must not remove locks manually. After
-clearing a stale lock, rerun queue/status/health checks before committing.
-
-#### Brush API Worktrees
-
-Use the Brush API worktree helper when brush work needs isolation from the
-shared checkout's Git index, HMR state, or active user-facing dev server:
-
-```bash
-aw repo worktree /tmp/brush-v8-fluid
-cd /tmp/brush-v8-fluid
-pnpm --filter @sketchapi/brush-api run check:types
-```
-
-The helper creates a branch-backed worktree through the commit-owner internals,
-clones populated submodules from the current checkout when local copies exist,
-copies generated brush WASM artifacts, and symlinks the dependency link
-structure needed for Brush API package checks. It does not fetch private
-submodules over SSH.
-
-Use `--copy-deps` only when a scratch worktree must be isolated from the parent
-checkout's `node_modules`; copying dependencies is much slower and uses
-substantially more disk.
-
-For browser debugging inside the worktree, run the Brush API-only dev server
-instead of the full workspace dev profile:
-
-```bash
-pnpm run brush-api:dev
-```
-
-It serves `http://localhost:3338/tools/brush-api/` by default and can be moved
-with `BRUSH_API_PORT=<port>`.
-
-#### Repair
-
-Use the repo-approved repair flow when Git reports tracked files as both staged
-deleted and untracked, or when the commit owner detects an index/HEAD entry
-mismatch. Use the recursive form only when a submodule or nested repo shows the
-same pattern.
-
-`aw owner git repair-index` rebuilds `.git/index` from `HEAD`, backs up the
-existing index, and does not update worktree files. `aw owner git repair-index
---recursive` applies the same repair to initialized submodules declared in
-`.gitmodules`, recursively declared nested submodules, and extra initialized
-nested Git repos with their own `.git` file or directory.
-
-#### Cleanup
-
-Dry-run generated cleanup before deleting anything:
+Clean generated files with a dry run first:
 
 ```bash
 aw repo clean
@@ -304,28 +171,21 @@ aw repo clean --generated
 aw repo clean --rust-targets
 aw repo clean --nested-node-modules
 aw repo clean --preprocessed
+aw repo clean --all-safe --delete
 ```
 
-The command reports candidates by default. It deletes only when `--delete` is
-passed with an explicit category flag.
+Cleanup categories:
 
-Safe categories:
+| Flag | Deletes when combined with `--delete` |
+|---|---|
+| `--generated` | `.turbo`, `.svelte-kit` |
+| `--rust-targets` | Rust/Cargo `target` directories |
+| `--nested-node-modules` | Package-local `node_modules`, not root `node_modules` |
+| `--preprocessed` | Legacy `_preprocessed` and code-watcher cache folders |
+| `--all-safe` | All safe categories above |
+| `--build-outputs` | `dist` and `build`; review dry-run output first |
 
-- `--generated`: `.turbo` and `.svelte-kit`
-- `--rust-targets`: Rust/Cargo `target` directories
-- `--nested-node-modules`: package-local `node_modules`, excluding root
-  `node_modules`
-- `--all-safe`: all categories above
-- `--preprocessed`: legacy `_preprocessed` folders and code-watcher cache
-
-Manual-review category:
-
-- `--build-outputs`: `dist` and `build` directories. These names are broad, so
-  review the dry-run output before deleting them.
-
-#### Measurement
-
-Use the measurement tools to prove workspace changes helped instead of guessing.
+Measure Git performance and candidate config:
 
 ```bash
 aw repo measure-git
@@ -333,165 +193,219 @@ aw repo measure-git infra/aw
 aw repo probe-git-config
 aw repo probe-git-config --path infra/aw
 aw repo probe-git-config --path infra/aw --apply
+aw repo routes
+aw repo routes doctor
+aw repo routes --config config/aw/routes.conf
 ```
 
-`measure-git` prints full and path-scoped Git timings. Pass a path to measure a
-specific slice. Without a path, it measures `infra/aw`.
+Create an isolated worktree for scratch work:
 
-`probe-git-config` measures candidate Git config values without writing them.
-It writes only winning values when explicitly run with `--apply`.
+```bash
+aw repo worktree /tmp/brush-v8-fluid
+aw repo worktree /tmp/brush-v8-fluid --branch brush-v8 --base main
+```
 
-## 📁 How Profiles Work
+The worktree helper creates a branch-backed worktree through owner internals,
+hydrates available submodules/generated artifacts/dependency links, and avoids
+fetching private submodules over SSH.
 
-A profile is a directory of inert config data that `aw` reads to build your
-environment.
+Routes are optional named local URLs for repo services. Store them in
+`config/aw/routes.conf`:
 
 ```text
-my-project/config/aw/
-  profile.conf
-  frontend.tabs
-  backend.tabs
+main=http://localhost:3240
+dev=http://dev.localhost:3240 http://dev.localtest.me:3240
 ```
 
-`profile.conf` sets project defaults:
+## Agent Commit Queue
+
+Use the commit queue when multiple workers share one checkout. Workers request
+scoped work; a commit-owner tab performs Git and package mutations.
+
+Set up the owner tab:
+
+```bash
+aw commit setup front --tab git --agent codex
+aw commit setup front --session sketch-api --tab git --agent codex
+aw commit setup front --tab git --no-agent
+```
+
+The setup command prepares the tab and can start the agent, but it does not
+consume queue items by itself. The commit-owner agent in the `git` tab becomes
+active when it receives `$x-commit next`; `aw commit poke git` sends that text
+to the tab.
+
+Worker flow:
+
+```bash
+aw commit request "Update docs" README.md \
+  --check "cargo test" \
+  --summary "Short context" \
+  --poke git
+
+aw commit status
+aw commit doctor
+aw commit wait <request-id>
+aw commit poke git
+```
+
+After `--poke git`, the `git` tab should run `$x-commit next`, inspect the
+ticket, commit the scoped live paths when safe, and mark the ticket done or
+blocked. Worker tabs should not run `$x-commit next`; they submit requests,
+check status, and wait only for their own request when needed.
+
+Useful request flags:
+
+| Flag | Use |
+|---|---|
+| `--root <queue-root>` | Share a custom queue path between request/status/owner commands. |
+| `--wait --timeout 10m` | Wait for the request just created. |
+| `--must-contain <text>` | Block stale tickets until expected text exists. |
+| `--must-not-contain <text>` | Block stale tickets until unwanted text is gone. |
+
+Avoid fingerprint flags for broad directory tickets that will likely receive
+follow-up edits in the same scope.
+
+## Owner-Only Commands
+
+`aw owner git` and `aw owner pkg` are commit-owner internals. Worker tabs should
+not run final commits, staging, repair, or package mutations directly.
+
+Git owner examples:
+
+```bash
+aw owner git status
+aw owner git status-fast
+aw owner git health --deep
+aw owner git repair-index
+aw owner git repair-index --recursive
+aw owner git chmod +x -- scripts/run.sh
+aw owner git fetch origin
+aw owner git push origin main
+aw owner git lfs-push origin main
+aw owner git worktree list
+aw owner git clone <args...>
+aw owner git submodule-sync <args...>
+aw owner git submodule-update <args...>
+aw owner git maintenance
+aw owner git submodule-status
+aw owner git commit-owned -m "message" -- path/to/file
+aw owner git -- status --short
+```
+
+Package owner examples:
+
+```bash
+aw owner pkg lock-info
+aw owner pkg -- install --lockfile-only
+aw owner pkg -- add <package> --filter <workspace>
+```
+
+Only clear stale queue or `.git/index.lock` files after checking that no active
+Git, package-manager, or queue owner process is using the checkout. Rerun
+queue/status/health checks before committing.
+
+## Profile Files
+
+Profiles are inert project files:
+
+```text
+config/aw/
+  profile.conf
+  main.tabs
+  frontend.tabs
+  routes.conf
+```
+
+`profile.conf`:
 
 ```text
 name=my-project
 root=/workspace
-default_workspace=frontend
-default_workspaces=frontend backend
+default_workspace=main
+default_workspaces=main frontend
 ```
 
-`*.tabs` files define workspace layouts. Each line is a tab name. You can
-optionally set a tab working directory with a tab-separated second column:
+`*.tabs` files list tabs in order. Add a tab-specific working directory after a
+tab character:
 
 ```text
 app
 server	/workspace/server
+git
 scratch
 ```
 
-`aw <workspace>` works for any `<workspace>.tabs` file. Workspace names such
-as `frontend` and `backend` are conventions, not special cases.
+Workspace names are just file names. `aw frontend` opens
+`config/aw/frontend.tabs`.
 
-Creating the first workspace writes:
+## Quality Of Life
 
-```text
-name=<current-directory-name>
-root=<current-directory-path>
-default_workspace=main
-default_workspaces=main
-```
+Shell completions are installed for zsh and bash. They complete commands,
+workspace names, tab names, and commit queue flags from the current profile.
 
-with `main.tabs`:
+Inside Zellij, the watcher marks background activity:
 
-```text
-app
-server
-infra
-scratch
-```
+| Marker | Meaning |
+|---|---|
+| `🤖` | An agent or script is working. |
+| `🔔` | Work finished on a background tab; it clears when viewed. |
 
-## ✨ Quality Of Life Features
-
-### 🤖 Agent Tab Status
-
-`aw` includes a watcher that can mark tabs while background agents or scripts
-are working:
-
-- `🤖` means an agent or script is actively working.
-- `🔔` means work finished on a background tab; it disappears when you view the
-  tab.
-
-The watcher starts automatically inside Zellij. Disable it for a launch when you
-want no status markers:
+Watcher controls:
 
 ```bash
 ZELLIJ_AGENT_TAB_WATCHER_DISABLE=1 aw front
-```
-
-Reset, stop, or inspect the watcher for a session:
-
-```bash
+ZELLIJ_AGENT_TAB_WATCHER_POLL_SECONDS=0.5 aw front
+ZELLIJ_SESSION_NAME=front ~/.local/share/agent-workspace/bin/.zellij-agent-tab-watcher --status
 ZELLIJ_SESSION_NAME=front ~/.local/share/agent-workspace/bin/.zellij-agent-tab-watcher --restart
 ZELLIJ_SESSION_NAME=front ~/.local/share/agent-workspace/bin/.zellij-agent-tab-watcher --stop
-ZELLIJ_SESSION_NAME=front ~/.local/share/agent-workspace/bin/.zellij-agent-tab-watcher --status
 ZELLIJ_SESSION_NAME=front ~/.local/share/agent-workspace/bin/.zellij-agent-tab-watcher --log 40
 ```
 
-Tune polling:
+Session behavior:
 
-```bash
-ZELLIJ_AGENT_TAB_WATCHER_POLL_SECONDS=0.5 aw front
+- Existing sessions are resumed instead of recreated.
+- Running `aw` inside Zellij switches sessions in place.
+- Serialized sessions restore panes as shells so `Ctrl+C` exits foreground
+  tools without killing the tab.
+- `Ctrl+T` opens the next scratch tab.
+- macOS-style delete and word/line movement keybinds are configured when the
+  terminal sends Apple/Meta keys.
+- Mouse scrolling and focus-follows-mouse are enabled; Ctrl-wheel pane resizing
+  is disabled.
+
+## Internals And Checks
+
+The public binary is installed as:
+
+```text
+~/.local/bin/aw
 ```
 
-### 🧠 Smart Session Resumption
+Private helper binaries live under:
 
-Existing sessions are preserved. When you resume a session, `aw` moves core
-profile tabs back into their configured order and removes duplicate or
-out-of-profile tabs so the session matches its `*.tabs` file.
+```text
+~/.local/share/agent-workspace/bin/
+```
 
-If you run `aw` from inside an existing Zellij client, it switches sessions in
-place instead of nesting a second client.
-
-Serialized sessions restore panes as shells instead of foreground apps. This
-keeps tabs alive when `Ctrl+C` exits tools such as Codex.
-
-### 🍎 macOS Notes And Keybinds
-
-For Mac-like editing, let your terminal app handle standard shortcuts such as
-Command+C, Command+V, and Command+L. The config maps Apple/Meta arrows to shell
-line movement.
-
-`Ctrl+T` creates a new scratch tab. If `scratch` already exists, it creates the
-next available name such as `scratch1`, `scratch2`, and so on.
-
-The config maps standard Mac delete behaviors:
-
-- `Alt + Backspace`: Delete previous word
-- `Alt + Left/Right`: Move to start/end of line when Apple is sent as Meta
-- `Super + Backspace`: Delete current line
-- `Super + Left/Right`: Move to start/end of line when Apple is sent as Super
-
-Text selection does not copy automatically. Use `Super c`, `Alt c`, or `Ctrl y`
-to copy the active Zellij selection.
-
-The config keeps mouse wheel scrolling enabled, disables Ctrl-wheel pane
-resizing, and uses focus-follows-mouse so the pane under the pointer receives
-scroll focus.
-
-## 🧰 Under The Hood
-
-`aw` is built from the Rust crate in `infra/aw` and
-installed with the Zellij helper bundle. The installer puts only public
-commands into `~/.local/bin/`. Treat these as the public interface:
-
-- `aw`
-
-The Rust `aw` binary is also installed under private helper names in
-`~/.local/share/agent-workspace/bin/`:
-
-- `zwork <profile> <workspace> [session] [workdir]`
-- `zellij-workspace-init`
-- `zellij-workspace-doctor`
-- `zellij-new-scratch-tab`
-- `zellij-launch-session`
-- `zellij-open-session`
-- `zellij-render-layout`
-- `zellij-saved-session-order`
-- `zellij-live-tab-order`
-- `zellij-session-tab-order`
-- `.zellij-agent-tab-watcher`
+Helpers include `zwork`, `zellij-workspace-init`,
+`zellij-workspace-doctor`, `zellij-new-scratch-tab`,
+`zellij-launch-session`, `zellij-open-session`, `zellij-render-layout`,
+`zellij-saved-session-order`, `zellij-live-tab-order`,
+`zellij-session-tab-order`, and `.zellij-agent-tab-watcher`.
 
 The installer also writes:
 
-- `~/.config/aw/config.kdl`
-- a marked shell block in `~/.zshrc` and `~/.bashrc`
+```text
+~/.config/aw/config.kdl
+~/.local/share/agent-workspace/completions/
+marked shell blocks in ~/.zshrc and ~/.bashrc
+```
 
-## ✅ Maintenance Checks
-
-Run these after changing the Zellij setup:
+Run these after changing AW:
 
 ```bash
+cargo fmt --manifest-path Cargo.toml --check
 cargo test --manifest-path Cargo.toml
+cargo outdated --manifest-path Cargo.toml
 ```
