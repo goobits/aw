@@ -23,7 +23,7 @@ work that appears while you are committing.
 
 In shared checkouts with a documented commit-owner queue, worker tabs do not run
 the final commit directly. They submit a verified commit ticket to the commit
-owner, usually with `aw commit add "Title" path... --check "cmd" --poke git`.
+owner, usually with `aw commit request "Title" path... --check "cmd" --poke git`.
 If a pending ticket already owns the same path scope, workers may consolidate
 new same-scope edits into that ticket by rerunning verification and poking the
 commit owner instead of adding a duplicate ticket.
@@ -54,7 +54,7 @@ Expected operator setup:
   against the same `.llm/commit-queue/`; `aw commit next` is a read-only
   handoff, not an atomic claim.
 - Other tabs submit normal handoffs with
-  `aw commit add "Title" path... --check "cmd" --poke git`, which sends
+  `aw commit request "Title" path... --check "cmd" --poke git`, which sends
   `$x-commit next` to the `git` tab.
 - When later worker work is still inside an existing pending ticket's path
   scope, do not create another ticket. Re-run the relevant checks, use
@@ -62,7 +62,7 @@ Expected operator setup:
   passed. Create a new ticket only when the live work is outside every pending
   ticket's path scope or is a genuinely separate commit slice.
 - If a worker needs a response, wait for only the specific ticket ID with
-  `aw commit wait <id>` or use `aw commit add ... --wait` to wait for the
+  `aw commit wait <id>` or use `aw commit request ... --wait` to wait for the
   request just created. Never wait for the whole queue; unrelated tickets may be
   ahead or behind the worker's request.
 - If a request uses `--root <queue-root>`, keep that same root for
@@ -71,8 +71,8 @@ Expected operator setup:
   non-default queue roots used by tests, debugging, or special workflows.
 - Use `aw commit doctor` when the queue is blocked or confusing. It should be
   the first readable diagnostic before raw queue details.
-- Treat `aw commit request/check/next/done/block/list` as queue plumbing for
-  agents, scripts, and debugging. Prefer the humane `add/status/poke` commands
+- Treat `aw commit raw-request/check/next/done/block/list` as queue plumbing for
+  agents, scripts, and debugging. Prefer the humane `request/status/poke` commands
   in user-facing examples.
 
 For each queue request:
@@ -125,7 +125,7 @@ Worker consolidation procedure:
 
 1. Check `aw commit status` or `aw commit list` for an existing matching
    pending ticket.
-2. If one exists, do not run `aw commit add`.
+2. If one exists, do not run `aw commit request`.
 3. Run `aw commit check` when the ticket uses fingerprints or a broad
    directory owner.
 4. Run or cite the verification for the current live state.
