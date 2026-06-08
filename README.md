@@ -35,6 +35,31 @@ pnpm run aw:install
 changes without writing files. Non-dry-run repo installs and migrations finish
 with `aw repo doctor`.
 
+### 2. Update In A Consuming Repo
+
+Agent Workspace is distributed as a pinned Git submodule at
+`infra/agent-workspace`. Updating a repo means fast-forwarding that submodule,
+refreshing the local install, checking the result, and committing the parent
+repo's submodule pointer.
+
+```bash
+pnpm run aw:update
+git add infra/agent-workspace
+git commit -m "chore: update agent workspace"
+```
+
+If the consuming repo does not provide `pnpm run aw:update`, run the same steps
+manually:
+
+```bash
+git -C infra/agent-workspace pull --ff-only
+pnpm run aw:install
+pnpm run aw -- doctor
+pnpm run aw -- repo doctor
+git add infra/agent-workspace
+git commit -m "chore: update agent workspace"
+```
+
 Agent Workspace owns the shared agent bundle too:
 
 ```text
@@ -49,7 +74,7 @@ repo/
 Shared behavior belongs in `infra/agent-workspace/agents/.agents`.
 Repo-specific facts stay in `.agents.local/project.md`.
 
-### 2. Create A Workspace
+### 3. Create A Workspace
 
 In any project directory, assign a workspace name to a comma-separated tab list.
 If `config/aw/` does not exist, `aw` creates the profile first.
@@ -74,7 +99,7 @@ aw back=infra,api,db
 aw back
 ```
 
-### 3. Daily Usage
+### 4. Daily Usage
 
 When a project has `config/aw/`, `aw` auto-detects it. You do not need to
 manually link or install profiles for normal repos.
@@ -102,7 +127,7 @@ aw front -r /custom/workspace/path
 aw front -s sketch-api -r /custom/workspace/path
 ```
 
-### 4. Visibility And Management
+### 5. Visibility And Management
 
 ```bash
 aw list         # List available workspaces in the current project
@@ -121,7 +146,7 @@ Shell completions are installed for zsh and bash. They complete commands,
 workspace names, known tab names, and commit queue flags from the current
 `config/aw` profile.
 
-### 5. Live Tab Management
+### 6. Live Tab Management
 
 Workspace names can also manage their live Zellij tabs. Indexed tab specs use
 zero-based positions, so `keyboard@1` places `keyboard` at the second tab.
