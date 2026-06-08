@@ -70,11 +70,32 @@ fn install_writes_public_binary_private_helpers_config_and_completions() {
 
     for file in [
         ".config/aw/config.kdl",
+        ".codex/config.toml",
+        ".claude/settings.json",
         ".local/share/agent-workspace/completions/_aw",
         ".local/share/agent-workspace/completions/aw.bash",
     ] {
         assert!(home.home.join(file).is_file(), "missing installed {file}");
     }
+    let codex_config = fs::read_to_string(home.home.join(".codex/config.toml")).unwrap();
+    assert!(codex_config.contains("[tui]"));
+    assert!(codex_config.contains("status_line = ["));
+    assert!(codex_config.contains("\"context-used\""));
+
+    let claude_statusline = home
+        .home
+        .join(".local/share/agent-workspace/bin/claude-statusline");
+    assert!(claude_statusline.is_file());
+    let claude_statusline_script = fs::read_to_string(&claude_statusline).unwrap();
+    assert!(claude_statusline_script.contains("used_percentage"));
+    let claude_settings: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(home.home.join(".claude/settings.json")).unwrap())
+            .unwrap();
+    assert_eq!(claude_settings["statusLine"]["type"], "command");
+    assert!(claude_settings["statusLine"]["command"]
+        .as_str()
+        .unwrap()
+        .contains("claude-statusline"));
 
     let bash_completion = fs::read_to_string(
         home.home
@@ -109,6 +130,56 @@ fn install_writes_public_binary_private_helpers_config_and_completions() {
     assert!(config.contains("Run \".zellij-new-scratch-tab\""));
     assert!(!home.home.join(".zshrc").exists());
     assert!(!home.home.join(".bashrc").exists());
+}
+
+#[test]
+fn install_preserves_existing_codex_status_line() {
+    let home = TestHome::new("install-codex-config");
+    temp::write(
+        home.home.join(".codex/config.toml"),
+        "model = \"gpt-5.5\"\n\n[tui]\nstatus_line = [\"model\", \"current-dir\"]\n",
+    );
+
+    let output = home
+        .command(support::command::aw())
+        .env("ZELLIJ_INSTALL_BINARY", "0")
+        .env("ZELLIJ_INSTALL_SHELL_RC", "0")
+        .arg("install")
+        .output()
+        .expect("run aw install");
+    assert_success("aw install", &output);
+
+    let codex_config = fs::read_to_string(home.home.join(".codex/config.toml")).unwrap();
+    assert!(codex_config.contains("model = \"gpt-5.5\""));
+    assert!(codex_config.contains("status_line = [\"model\", \"current-dir\"]"));
+    assert!(!codex_config.contains("\"context-used\""));
+}
+
+#[test]
+fn install_preserves_existing_claude_status_line() {
+    let home = TestHome::new("install-claude-settings");
+    temp::write(
+        home.home.join(".claude/settings.json"),
+        r#"{"cleanupPeriodDays":30,"statusLine":{"type":"command","command":"custom status"}}"#,
+    );
+
+    let output = home
+        .command(support::command::aw())
+        .env("ZELLIJ_INSTALL_BINARY", "0")
+        .env("ZELLIJ_INSTALL_SHELL_RC", "0")
+        .arg("install")
+        .output()
+        .expect("run aw install");
+    assert_success("aw install", &output);
+
+    let claude_settings = fs::read_to_string(home.home.join(".claude/settings.json")).unwrap();
+    assert!(claude_settings.contains("\"custom status\""));
+    assert!(claude_settings.contains("\"cleanupPeriodDays\":30"));
+    assert!(!claude_settings.contains("claude-statusline"));
+    assert!(home
+        .home
+        .join(".local/share/agent-workspace/bin/claude-statusline")
+        .is_file());
 }
 
 #[test]

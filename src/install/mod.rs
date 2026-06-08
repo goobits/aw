@@ -6,6 +6,7 @@ use std::process::{Command, Stdio};
 
 use crate::error::{AwError, Result};
 use crate::paths::home_dir;
+use serde_json::{json, Value};
 
 const CONFIG_KDL: &str = include_str!("../../config.kdl");
 const ZSH_COMPLETION: &str = include_str!("../../completions/_aw");
@@ -14,6 +15,54 @@ const ROOT_AGENTS_TEMPLATE: &str = include_str!("../../agents/.agents/templates/
 const PROJECT_TEMPLATE: &str = include_str!("../../agents/.agents/templates/project.md");
 const START_MARKER: &str = "# >>> zellij workspaces >>>";
 const END_MARKER: &str = "# <<< zellij workspaces <<<";
+const CODEX_STATUS_LINE: &str = r#"status_line = [
+  "model-with-reasoning",
+  "run-state",
+  "context-used",
+  "git-branch",
+  "current-dir",
+]
+"#;
+const CLAUDE_STATUS_LINE_SCRIPT: &str = r#"#!/usr/bin/env node
+const fs = require("node:fs");
+const { execFileSync } = require("node:child_process");
+
+let data = {};
+try {
+  const input = fs.readFileSync(0, "utf8");
+  data = input.trim() ? JSON.parse(input) : {};
+} catch {
+  data = {};
+}
+
+const model =
+  data.model?.display_name ||
+  data.model?.id ||
+  (typeof data.model === "string" ? data.model : "") ||
+  "claude";
+const cwd = data.workspace?.current_dir || data.cwd || process.cwd();
+const dir = String(cwd).split(/[\\/]/).filter(Boolean).pop() || cwd || ".";
+const context = data.context_window?.used_percentage;
+const contextText =
+  typeof context === "number" && Number.isFinite(context)
+    ? `${Math.round(context)}% ctx`
+    : "";
+
+let branch = data.worktree?.branch || "";
+if (!branch) {
+  try {
+    branch = execFileSync("git", ["-C", cwd, "branch", "--show-current"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 100,
+    }).trim();
+  } catch {
+    branch = "";
+  }
+}
+
+console.log([model, contextText, branch, dir].filter(Boolean).join(" | "));
+"#;
 
 const INTERNAL_EXECUTABLES: &[&str] = &[
     "zellij-saved-session-order",
@@ -327,6 +376,8 @@ fn install_files() -> Result<()> {
     fs::write(home_dir().join(".config/aw/config.kdl"), CONFIG_KDL)?;
     fs::write(completion_dir.join("_aw"), ZSH_COMPLETION)?;
     fs::write(completion_dir.join("aw.bash"), BASH_COMPLETION)?;
+    ensure_codex_status_line()?;
+    ensure_claude_status_line(&internal_bin.join("claude-statusline"))?;
 
     let source_binary = env::current_exe()?;
     for executable in INTERNAL_EXECUTABLES {
@@ -354,6 +405,110 @@ fn install_files() -> Result<()> {
         let _ = fs::remove_file(home_dir().join(".config/aw/layouts").join(stale));
     }
     Ok(())
+}
+
+fn ensure_codex_status_line() -> Result<()> {
+    let codex_dir = home_dir().join(".codex");
+    fs::create_dir_all(&codex_dir)?;
+    let config_path = codex_dir.join("config.toml");
+    let contents = fs::read_to_string(&config_path).unwrap_or_default();
+    if has_codex_status_line(&contents) {
+        return Ok(());
+    }
+
+    let next = if contents.lines().any(|line| line.trim() == "[tui]") {
+        insert_codex_status_line(contents)
+    } else {
+        append_codex_tui_section(contents)
+    };
+    fs::write(config_path, next)?;
+    Ok(())
+}
+
+fn has_codex_status_line(contents: &str) -> bool {
+    contents
+        .lines()
+        .any(|line| line.trim_start().starts_with("status_line"))
+}
+
+fn insert_codex_status_line(contents: String) -> String {
+    let mut next = String::new();
+    let mut inserted = false;
+    for line in contents.lines() {
+        next.push_str(line);
+        next.push('\n');
+        if !inserted && line.trim() == "[tui]" {
+            next.push_str(CODEX_STATUS_LINE);
+            inserted = true;
+        }
+    }
+    next
+}
+
+fn append_codex_tui_section(mut contents: String) -> String {
+    if !contents.is_empty() && !contents.ends_with('\n') {
+        contents.push('\n');
+    }
+    if !contents.is_empty() {
+        contents.push('\n');
+    }
+    contents.push_str("[tui]\n");
+    contents.push_str(CODEX_STATUS_LINE);
+    contents
+}
+
+fn ensure_claude_status_line(script_path: &Path) -> Result<()> {
+    fs::write(script_path, CLAUDE_STATUS_LINE_SCRIPT)?;
+    make_executable(script_path)?;
+
+    let claude_dir = home_dir().join(".claude");
+    fs::create_dir_all(&claude_dir)?;
+    let settings_path = claude_dir.join("settings.json");
+    let contents = fs::read_to_string(&settings_path).unwrap_or_default();
+    let mut settings = if contents.trim().is_empty() {
+        json!({})
+    } else {
+        serde_json::from_str::<Value>(&contents).map_err(|error| {
+            AwError::new(
+                format!(
+                    "aw install failed: could not parse {}: {}",
+                    settings_path.display(),
+                    error
+                ),
+                1,
+            )
+        })?
+    };
+
+    let Some(object) = settings.as_object_mut() else {
+        return Err(AwError::new(
+            format!(
+                "aw install failed: {} must contain a JSON object",
+                settings_path.display()
+            ),
+            1,
+        ));
+    };
+    if object.contains_key("statusLine") {
+        return Ok(());
+    }
+
+    object.insert(
+        "statusLine".to_string(),
+        json!({
+            "type": "command",
+            "command": shell_quote(&script_path.to_string_lossy()),
+        }),
+    );
+    fs::write(
+        settings_path,
+        format!("{}\n", serde_json::to_string_pretty(&settings).unwrap()),
+    )?;
+    Ok(())
+}
+
+fn shell_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "'\\''"))
 }
 
 fn stop_stale_watchers() {
