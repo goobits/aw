@@ -54,9 +54,7 @@ fn migrate_repo_creates_current_adapters() {
         .expect("run aw repo migrate");
 
     assert_success("aw repo migrate", &output);
-    assert!(repo
-        .join("infra/aw/agents/.agents/AGENTS.md")
-        .is_file());
+    assert!(repo.join("infra/aw/agents/.agents/AGENTS.md").is_file());
     assert_eq!(
         fs::read_link(repo.join(".agents")).unwrap(),
         Path::new("infra/aw/agents/.agents")
@@ -84,18 +82,12 @@ fn write_ready_repo(repo: &Path) {
         repo.join("infra/aw/Cargo.toml"),
         "[package]\nname = \"aw\"\n",
     );
-    temp::write(
-        repo.join("infra/aw/agents/.agents/AGENTS.md"),
-        "# shared\n",
-    );
+    temp::write(repo.join("infra/aw/agents/.agents/AGENTS.md"), "# shared\n");
     temp::write(repo.join("AGENTS.md"), "# root\n");
     temp::write(repo.join(".agents.local/project.md"), "# project\n");
     temp::write(repo.join("config/aw/profile.conf"), "name=demo\n");
     temp::write(repo.join("config/aw/front.tabs"), "app\ngit\nscratch\n");
-    symlink(
-        "infra/aw/agents/.agents",
-        &repo.join(".agents"),
-    );
+    symlink("infra/aw/agents/.agents", &repo.join(".agents"));
     symlink("AGENTS.md", &repo.join("CLAUDE.md"));
     symlink("../.agents/skills", &repo.join(".claude/skills"));
 }

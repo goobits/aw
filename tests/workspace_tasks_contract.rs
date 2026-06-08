@@ -51,6 +51,74 @@ fn cleanup_generated_rejects_unknown_options() {
 }
 
 #[test]
+fn repo_routes_lists_configured_local_hosts() {
+    let repo = TempDir::new("workspace-routes");
+    temp::write(
+        repo.join("config/aw/routes.conf"),
+        "\
+# role = public URLs served by the repo
+main=http://localhost:3240
+dev=http://dev.localhost:3240 http://dev.localtest.me:3240
+prod=http://prod.localhost:3240 http://prod.localtest.me:3240
+",
+    );
+
+    let output = Command::new(support::command::aw())
+        .args(["repo", "routes"])
+        .current_dir(repo.path())
+        .output()
+        .expect("routes list");
+
+    assert_success("routes list", &output);
+    let text = stdout(&output);
+    assert!(text.contains("main\thttp://localhost:3240"));
+    assert!(text.contains("dev\thttp://dev.localhost:3240 http://dev.localtest.me:3240"));
+    assert!(text.contains("prod\thttp://prod.localhost:3240 http://prod.localtest.me:3240"));
+}
+
+#[test]
+fn repo_routes_doctor_validates_configured_local_hosts() {
+    let repo = TempDir::new("workspace-routes-doctor");
+    temp::write(
+        repo.join("config/aw/routes.conf"),
+        "\
+main=http://localhost:3240
+dev=http://dev.localhost:3240
+prod=http://prod.localhost:3240
+",
+    );
+
+    let output = Command::new(support::command::aw())
+        .args(["repo", "routes", "doctor"])
+        .current_dir(repo.path())
+        .output()
+        .expect("routes doctor");
+
+    assert_success("routes doctor", &output);
+    let text = stdout(&output);
+    assert!(text.contains("ok      config/aw/routes.conf"));
+    assert!(text.contains("ok      route dev http://dev.localhost:3240"));
+    assert!(text.contains("ok      repo routes ready"));
+}
+
+#[test]
+fn repo_routes_rejects_bad_endpoints() {
+    let repo = TempDir::new("workspace-routes-bad");
+    temp::write(
+        repo.join("config/aw/routes.conf"),
+        "dev=dev.localhost:3240\n",
+    );
+
+    let output = Command::new(support::command::aw())
+        .args(["repo", "routes"])
+        .current_dir(repo.path())
+        .output()
+        .expect("routes bad");
+
+    assert_failure("routes bad", &output);
+}
+
+#[test]
 fn brush_api_worktree_help_is_native() {
     let output = Command::new(support::command::aw())
         .args(["repo", "worktree", "--help"])

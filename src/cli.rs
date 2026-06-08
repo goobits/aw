@@ -64,6 +64,7 @@ repo maintenance:
   aw repo clean [--delete] [--generated|--rust-targets|--nested-node-modules|--all-safe|--build-outputs|--preprocessed]
   aw repo measure-git [path]
   aw repo probe-git-config [--path path] [--apply]
+  aw repo routes [doctor] [--config path]
   aw repo worktree <path> [--branch name] [--base ref]
 
 owner internals:
@@ -194,6 +195,7 @@ fn run_repo_command(args: &[String]) -> Result<i32> {
         "clean" => workspace_tasks::run_named("cleanup-generated", rest),
         "measure-git" => workspace_tasks::run_named("measure-git", rest),
         "probe-git-config" => workspace_tasks::run_named("probe-git-config", rest),
+        "routes" => workspace_tasks::run_named("routes", rest),
         "worktree" => brush_worktree::run(rest),
         other => Err(AwError::usage(format!("aw: unknown repo command {other}"))),
     }

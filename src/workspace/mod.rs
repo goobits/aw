@@ -10,6 +10,7 @@ use std::time::Instant;
 use crate::error::{AwError, Result};
 
 const DEFAULT_GIT_MEASURE_PATH: &str = "infra/aw";
+const DEFAULT_ROUTES_CONFIG_PATH: &str = "config/aw/routes.conf";
 
 pub fn run(args: &[String]) -> Result<i32> {
     let Some((command, rest)) = args.split_first() else {
@@ -28,6 +29,7 @@ pub fn run_named(command: &str, args: &[String]) -> Result<i32> {
         "cleanup-generated" => cleanup_generated(args),
         "measure-git" => measure_git(args),
         "probe-git-config" => probe_git_config(args),
+        "routes" => routes(args),
         other => Err(AwError::new(format!("aw repo: unknown command {other}"), 1)),
     }
 }
@@ -244,6 +246,46 @@ fn probe_git_config(args: &[String]) -> Result<i32> {
     Ok(exit_code)
 }
 
+fn routes(args: &[String]) -> Result<i32> {
+    let mut doctor = false;
+    let mut config_path = PathBuf::from(DEFAULT_ROUTES_CONFIG_PATH);
+    let mut index = 0;
+    while index < args.len() {
+        match args[index].as_str() {
+            "doctor" => {
+                doctor = true;
+                index += 1;
+            }
+            "--config" => {
+                config_path = args
+                    .get(index + 1)
+                    .ok_or_else(|| AwError::new("--config requires a value", 1))?
+                    .into();
+                index += 2;
+            }
+            "--" => index += 1,
+            other => return Err(AwError::new(format!("Unknown option: {other}"), 1)),
+        }
+    }
+    let repo_root = env::current_dir()?;
+    let routes = read_routes_config(&repo_root.join(&config_path))?;
+    if doctor {
+        println!(
+            "ok      {}",
+            relative_path(&repo_root, &repo_root.join(&config_path))
+        );
+        for route in &routes {
+            println!("ok      route {} {}", route.name, route.endpoints.join(" "));
+        }
+        println!("ok      repo routes ready");
+        return Ok(0);
+    }
+    for route in &routes {
+        println!("{}\t{}", route.name, route.endpoints.join(" "));
+    }
+    Ok(0)
+}
+
 struct CleanupOptions {
     delete_matches: bool,
     include_generated_caches: bool,
@@ -256,6 +298,100 @@ struct CleanupOptions {
 struct CleanupMatch {
     category: &'static str,
     path: PathBuf,
+}
+
+struct RouteConfigEntry {
+    name: String,
+    endpoints: Vec<String>,
+}
+
+fn read_routes_config(path: &Path) -> Result<Vec<RouteConfigEntry>> {
+    let text = fs::read_to_string(path).map_err(|error| {
+        AwError::new(
+            format!("Could not read {}: {error}", path.to_string_lossy()),
+            1,
+        )
+    })?;
+    let mut routes = Vec::new();
+    for (index, raw_line) in text.lines().enumerate() {
+        let line = raw_line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let Some((name, endpoints)) = line.split_once('=') else {
+            return Err(AwError::new(
+                format!("Invalid route line {}: expected name=url", index + 1),
+                1,
+            ));
+        };
+        let name = name.trim();
+        if !valid_route_name(name) {
+            return Err(AwError::new(
+                format!("Invalid route name on line {}: {name}", index + 1),
+                1,
+            ));
+        }
+        let endpoints = endpoints
+            .split_whitespace()
+            .map(|endpoint| validate_route_endpoint(endpoint, index + 1))
+            .collect::<Result<Vec<_>>>()?;
+        if endpoints.is_empty() {
+            return Err(AwError::new(
+                format!(
+                    "Invalid route line {}: expected at least one endpoint",
+                    index + 1
+                ),
+                1,
+            ));
+        }
+        routes.push(RouteConfigEntry {
+            name: name.to_string(),
+            endpoints,
+        });
+    }
+    if routes.is_empty() {
+        return Err(AwError::new(
+            format!("No routes configured in {}", path.to_string_lossy()),
+            1,
+        ));
+    }
+    Ok(routes)
+}
+
+fn valid_route_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.chars().all(|character| {
+            character.is_ascii_alphanumeric() || character == '-' || character == '_'
+        })
+}
+
+fn validate_route_endpoint(endpoint: &str, line: usize) -> Result<String> {
+    let Some(rest) = endpoint
+        .strip_prefix("http://")
+        .or_else(|| endpoint.strip_prefix("https://"))
+    else {
+        return Err(AwError::new(
+            format!("Invalid route endpoint on line {line}: expected http://host:port"),
+            1,
+        ));
+    };
+    let Some((host, port)) = rest.rsplit_once(':') else {
+        return Err(AwError::new(
+            format!("Invalid route endpoint on line {line}: expected http://host:port"),
+            1,
+        ));
+    };
+    if host.is_empty()
+        || host.contains('/')
+        || port.is_empty()
+        || !port.chars().all(|character| character.is_ascii_digit())
+    {
+        return Err(AwError::new(
+            format!("Invalid route endpoint on line {line}: expected http://host:port"),
+            1,
+        ));
+    }
+    Ok(endpoint.to_string())
 }
 
 fn walk_cleanup(
@@ -437,6 +573,7 @@ fn print_usage() {
         "Usage:
   aw repo clean [--delete] [--generated|--rust-targets|--nested-node-modules|--all-safe|--build-outputs|--preprocessed]
   aw repo measure-git [path]
-  aw repo probe-git-config [--path path] [--apply]"
+  aw repo probe-git-config [--path path] [--apply]
+  aw repo routes [doctor] [--config path]"
     );
 }

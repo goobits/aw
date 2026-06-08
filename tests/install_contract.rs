@@ -225,11 +225,8 @@ fn install_repo_repairs_stale_managed_symlink() {
         "name=demo\nroot=.\ndefault_workspace=front\n",
     );
     temp::write(repo.join("config/aw/front.tabs"), "app\ngit\nscratch\n");
-    std::os::unix::fs::symlink(
-        "infra/agent-workspace/agents/.agents",
-        repo.join(".agents"),
-    )
-    .unwrap();
+    std::os::unix::fs::symlink("infra/agent-workspace/agents/.agents", repo.join(".agents"))
+        .unwrap();
 
     let output = home
         .command(support::command::aw())
