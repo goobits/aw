@@ -41,7 +41,6 @@ struct PendingClick {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct DragState {
-    tab_id: usize,
     name: String,
     index: usize,
 }
@@ -121,8 +120,10 @@ impl TabBarState {
         line
     }
 
-    pub fn click(&mut self, col: usize) -> Option<TabBarCommand> {
-        let span = self.span_at(col)?.clone();
+    pub fn click(&mut self, col: usize) {
+        let Some(span) = self.span_at(col).cloned() else {
+            return;
+        };
         if self
             .pending_click
             .as_ref()
@@ -130,13 +131,12 @@ impl TabBarState {
         {
             self.pending_click = None;
             self.begin_rename(span.index);
-            return None;
+            return;
         }
         self.pending_click = Some(PendingClick {
             tab_id: span.tab_id,
             index: span.index,
         });
-        None
     }
 
     pub fn click_timeout(&mut self) -> Option<TabBarCommand> {
@@ -149,7 +149,6 @@ impl TabBarState {
     pub fn hold(&mut self, col: usize) {
         if let Some(span) = self.span_at(col).cloned() {
             self.drag = Some(DragState {
-                tab_id: span.tab_id,
                 name: span.name,
                 index: span.index,
             });
@@ -308,7 +307,7 @@ mod tests {
         state.replace_tabs(vec![item(1, 0, "app"), item(2, 1, "server")]);
         state.render_line(80);
 
-        assert_eq!(state.click(9), None);
+        state.click(9);
         assert_eq!(
             state.click_timeout(),
             Some(TabBarCommand::Focus { index: 1 })
