@@ -39,6 +39,9 @@ Do not commit if verification fails, ownership is unclear, target paths overlap 
 
 Output:
 
+Style final output directly with the shared colorful vocabulary. The fenced
+block is a structure template, not literal output.
+
 ```text
 Cleaned
 - path - diagnostic fixed and why it belongs to this slice

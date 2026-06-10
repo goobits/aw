@@ -71,6 +71,9 @@ the user explicitly says not to commit.
 
 ## Output
 
+Style updated docs, removed stale references, verification, and remaining
+questions with shared colors when useful.
+
 **Updated**
 
 - path - what changed

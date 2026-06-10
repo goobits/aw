@@ -175,6 +175,9 @@ Rules for the tracker:
 
 After committing, report:
 
+Style final output directly with the shared colorful vocabulary. The fenced
+block is a structure template, not literal output.
+
 ```text
 Verdict
 - <one or two lines: where the domain stands>

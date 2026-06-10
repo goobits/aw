@@ -5,6 +5,8 @@ description: 'Use when the user invokes $x-version-source or /x-version-source, 
 
 # X Version Source
 
+Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+
 Use this skill to remove version drift by making maintained manifests the source
 of truth. It is based on `.llm/scratch/prompt-palette/version.md`.
 
@@ -72,6 +74,9 @@ Run lightweight checks appropriate to the change:
   approved by local policy.
 
 ## Output
+
+Style final output directly with the shared colorful vocabulary. The fenced
+block is a structure template, not literal output.
 
 ```text
 ▌ Version Source

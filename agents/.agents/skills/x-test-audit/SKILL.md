@@ -73,6 +73,9 @@ repo's equivalent test, quality, and code-standard policies.
 
 ## Output
 
+Style final output directly with the shared colorful vocabulary. The fenced
+block is a structure template, not literal output.
+
 Lead with findings:
 
 ```text

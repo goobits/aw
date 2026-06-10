@@ -5,6 +5,8 @@ description: 'Use when the user invokes $x-docs-style or /x-docs-style, asks to 
 
 # X Docs Style
 
+Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+
 Use this skill to make documentation cleaner, more scannable, and better
 structured while preserving factual meaning. It is based on the prompt palette
 entry `.llm/scratch/prompt-palette/docs-style.md`.
@@ -91,6 +93,9 @@ Run lightweight checks appropriate to the edit:
 - No build unless the user explicitly approved it.
 
 ## Output
+
+Style final output directly with the shared colorful vocabulary. The fenced
+block is a structure template, not literal output.
 
 ```text
 ▌ Docs Style

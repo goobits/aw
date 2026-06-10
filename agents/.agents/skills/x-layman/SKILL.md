@@ -48,6 +48,8 @@ Pick the clearest shape for the prior result:
 
 Use simple visual hierarchy, not decoration. Prefer short labels, aligned
 tables, checkboxes, and concise bullets over long prose.
+Apply the shared colorful output vocabulary directly when it improves scanning,
+especially for status, recommended choices, blockers, risk, and next actions.
 Use lightweight Markdown styling when it helps: **bold** labels/verdicts,
 _italic_ caveats, and `monospace` paths/commands/literal values. Do not wrap the
 whole answer in a code fence unless fixed-width alignment is the point.

@@ -28,6 +28,10 @@ soon as the relevant slice can be proven.
 
 Use this compact format:
 
+Style proposals directly with shared colors. The fenced blocks are structure
+templates, not literal output. Highlight recommended options, phases, blockers,
+verification, totals, and layman's wins when useful.
+
 ```text
 + path/to/new-file.ts
 ~ path/to/edited-file.ts

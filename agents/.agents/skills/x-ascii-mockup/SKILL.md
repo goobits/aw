@@ -48,8 +48,10 @@ to implement the mockup.
 ## Styling
 
 Always produce a colorful response for terminal-capable output unless the user
-asks for plain Markdown or strict ASCII. Apply styles directly; do not describe
-them in the output.
+asks for plain Markdown or strict ASCII. Use real ANSI escape sequences for
+terminal or terminal-like chat output. Apply styles directly; do not describe
+them in the output. Do not wrap the final colored mockup in a code fence,
+because code fences often prevent ANSI color from rendering.
 
 | Element                         | Style                 |
 | ------------------------------- | --------------------- |
@@ -76,6 +78,10 @@ alignment that collapses with normal spaces.
 
 ### ANSI Palette
 
+Emit the actual escape characters in the final answer, not the literal text
+`\033`, not bash variables, and not a `printf` snippet. The shell snippet below
+is only a precise palette reference.
+
 ```bash
 BLUE='\033[1;38;5;75m'    # title/main object
 PURPLE='\033[1;38;5;141m' # panel/column headers
@@ -86,13 +92,16 @@ DIM='\033[2;3m'           # hints/secondary labels
 RESET='\033[0m'
 ```
 
-If ANSI rendering fails, use Markdown styling and the same symbols. Use a fenced
-`text` block only when preserving alignment is more important than rendered
-color.
+For terminal-like output, try ANSI first even if the renderer might strip it.
+Fallback to Markdown only when the user asks for plain Markdown or reports that
+ANSI rendering failed. Use a fenced `text` block only when preserving exact
+alignment is more important than rendered color.
 
 ## Output Shapes
 
-Pick the smallest shape that communicates the idea:
+Pick the smallest shape that communicates the idea. The examples below are
+structure templates only; do not copy them as final output without applying the
+styling rules above.
 
 ```text
 Panel
@@ -130,9 +139,7 @@ Input → Check → Fix → Verify → Commit
 
 **Mockup**
 
-```text
-<ascii sketch>
-```
+<colored terminal sketch, unfenced unless strict fixed-width alignment matters more than rendered color>
 
 **Why this shape**
 

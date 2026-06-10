@@ -5,6 +5,11 @@ use std::collections::BTreeMap;
 use state::{KeyInput, TabBarCommand, TabBarState, TabItem};
 use zellij_tile::prelude::*;
 
+const STATUS_WAITING_FOR_PERMISSIONS: &str = "aw-tab-bar: waiting for permissions";
+const STATUS_LOADING_TABS: &str = "aw-tab-bar: loading tabs";
+const STATUS_PERMISSION_DENIED: &str = "aw-tab-bar: permissions denied";
+const STATUS_NO_TABS: &str = "aw-tab-bar: no tabs";
+
 #[derive(Debug)]
 struct Config {
     workspace: Option<String>,
@@ -33,26 +38,41 @@ register_plugin!(PluginState);
 impl ZellijPlugin for PluginState {
     fn load(&mut self, configuration: BTreeMap<String, String>) {
         self.config = Config::from(configuration);
+        self.tabs.set_status(STATUS_WAITING_FOR_PERMISSIONS);
         set_selectable(true);
+        subscribe(&[EventType::PermissionRequestResult]);
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
             PermissionType::RunCommands,
         ]);
-        subscribe(&[
-            EventType::TabUpdate,
-            EventType::Mouse,
-            EventType::Key,
-            EventType::Timer,
-            EventType::RunCommandResult,
-        ]);
     }
 
     fn update(&mut self, event: Event) -> bool {
         match event {
+            Event::PermissionRequestResult(PermissionStatus::Granted) => {
+                self.tabs.set_status(STATUS_LOADING_TABS);
+                subscribe(&[
+                    EventType::TabUpdate,
+                    EventType::Mouse,
+                    EventType::Key,
+                    EventType::Timer,
+                    EventType::RunCommandResult,
+                ]);
+                true
+            }
+            Event::PermissionRequestResult(PermissionStatus::Denied) => {
+                self.tabs.set_status(STATUS_PERMISSION_DENIED);
+                true
+            }
             Event::TabUpdate(tabs) => {
-                self.tabs
-                    .replace_tabs(tabs.into_iter().map(TabItem::from).collect());
+                let tabs: Vec<_> = tabs.into_iter().map(TabItem::from).collect();
+                if tabs.is_empty() {
+                    self.tabs.set_status(STATUS_NO_TABS);
+                } else {
+                    self.tabs.clear_status();
+                }
+                self.tabs.replace_tabs(tabs);
                 true
             }
             Event::Mouse(Mouse::LeftClick(_, col)) => {
@@ -104,7 +124,7 @@ impl ZellijPlugin for PluginState {
     }
 
     fn render(&mut self, _rows: usize, cols: usize) {
-        println!("{}", self.tabs.render_line(cols));
+        print!("{}", self.tabs.render_line(cols));
     }
 }
 

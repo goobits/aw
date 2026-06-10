@@ -47,6 +47,9 @@ Always follow `AGENTS.md`. Read `.agents/policies/quality.md`,
 
 ## Output
 
+Style severity, blockers, checks, open questions, and summary verdicts with
+shared colors when useful.
+
 Lead with findings ordered by risk:
 
 **Findings**

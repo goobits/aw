@@ -86,6 +86,9 @@ Verify afterward with the Playwright/Xvfb audit command. Use `kill -KILL -- -<PG
 
 ## Response Shape
 
+Style healthy capacity, warnings, cleanup candidates, unsafe cleanup, and
+report-only next steps with shared colors when useful.
+
 For a normal report:
 
 1. System capacity table.

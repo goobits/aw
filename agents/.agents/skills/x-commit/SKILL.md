@@ -289,6 +289,9 @@ If the user says to commit staged changes, still inspect the staged diff first. 
 
 Report:
 
+Style commits, checks, skipped slices, warnings, and blockers with shared colors
+when useful.
+
 - Commits created, with short hashes when available.
 - Files or slices intentionally left uncommitted.
 - Verification run, or why verification was not run.

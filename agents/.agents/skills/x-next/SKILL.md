@@ -91,6 +91,9 @@ by operations/dependencies.
 
 When reporting progress, keep it short:
 
+Style done phases, blockers, remaining work, suggested phases, verification,
+and ownership markers with shared colors when useful.
+
 - **Phase N: done**
 - **Phase N: blocked** because ...
 - **Remaining:** ...

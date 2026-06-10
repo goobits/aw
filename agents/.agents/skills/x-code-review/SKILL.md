@@ -116,6 +116,9 @@ Separate pre-existing failures from failures caused by the reviewed change. Neve
 
 ## Output
 
+Style verdicts, severity, blockers, checks, and residual risk with shared colors
+when useful.
+
 Lead with findings, ordered by severity. Use this shape:
 
 **Findings**

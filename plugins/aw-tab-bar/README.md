@@ -57,3 +57,14 @@ Behavior:
 
 Tab names intentionally use AW's safe workspace name set:
 letters, numbers, `.`, `_`, and `-`.
+
+Smoke check the installed plugin with a disposable Zellij session:
+
+```bash
+cargo build --release --manifest-path plugins/aw-tab-bar/Cargo.toml --target wasm32-wasip1
+AW_TAB_BAR_WASM_SOURCE="$PWD/plugins/aw-tab-bar/target/wasm32-wasip1/release/aw-tab-bar.wasm" aw install
+env -u ZELLIJ -u ZELLIJ_SESSION_NAME SHELL=/bin/sh zellij --session aw-tab-bar-smoke --layout /path/to/rendered-layout.kdl
+```
+
+Then verify the first row renders tabs, double-clicking a tab enters inline
+rename, and dragging a tab runs the AW move path.

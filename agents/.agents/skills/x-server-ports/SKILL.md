@@ -5,6 +5,8 @@ description: 'Use when the user invokes $x-server-ports or /x-server-ports, asks
 
 # X Server Ports
 
+Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+
 Use this skill to design, audit, or implement fixed-port server lifecycle
 behavior. It is based on `.llm/scratch/prompt-palette/server-ports.md`.
 
@@ -70,6 +72,9 @@ Run lightweight checks appropriate to the change:
 - No broad build unless explicitly approved.
 
 ## Output
+
+Style final output directly with the shared colorful vocabulary. The fenced
+block is a structure template, not literal output.
 
 ```text
 ▌ Server Ports

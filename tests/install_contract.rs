@@ -151,7 +151,16 @@ fn install_copies_aw_tab_bar_plugin_when_wasm_source_is_available() {
     let installed = home
         .home
         .join(".local/share/agent-workspace/plugins/aw-tab-bar.wasm");
-    assert_eq!(fs::read_to_string(installed).unwrap(), "wasm\n");
+    assert_eq!(fs::read_to_string(&installed).unwrap(), "wasm\n");
+
+    let permissions = fs::read_to_string(home.home.join(".cache/zellij/permissions.kdl")).unwrap();
+    assert!(permissions.contains(&format!("\"file:{}\"", installed.display())));
+    assert!(permissions.contains(&format!("\"{}\"", installed.display())));
+    assert!(permissions.contains("\"aw-tab-bar\""));
+    assert!(permissions.contains("\"aw-tab-bar.wasm\""));
+    assert!(permissions.contains("ReadApplicationState"));
+    assert!(permissions.contains("ChangeApplicationState"));
+    assert!(permissions.contains("RunCommands"));
 }
 
 #[test]

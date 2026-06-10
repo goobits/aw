@@ -114,7 +114,9 @@ impl TabBarState {
         }
 
         if let Some(status) = &self.status {
-            push_fitting(&mut line, " ", cols);
+            if !line.is_empty() {
+                push_fitting(&mut line, " ", cols);
+            }
             push_fitting(&mut line, status, cols);
         }
         line
@@ -272,6 +274,23 @@ mod tests {
             has_bell: false,
             sync_panes: false,
         }
+    }
+
+    #[test]
+    fn status_renders_without_tabs() {
+        let mut state = TabBarState::default();
+        state.set_status("aw-tab-bar: loading tabs");
+
+        assert_eq!(state.render_line(80), "aw-tab-bar: loading tabs");
+        assert!(state.spans().is_empty());
+    }
+
+    #[test]
+    fn status_truncates_to_available_columns() {
+        let mut state = TabBarState::default();
+        state.set_status("aw-tab-bar: loading tabs");
+
+        assert_eq!(state.render_line(10), "aw-tab-bar");
     }
 
     #[test]

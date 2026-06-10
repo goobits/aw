@@ -418,10 +418,77 @@ fn install_aw_tab_bar_plugin(plugin_dir: &Path) -> Result<()> {
             PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("plugins/aw-tab-bar/target/wasm32-wasip1/release/aw-tab-bar.wasm")
         });
+    let installed = plugin_dir.join("aw-tab-bar.wasm");
     if source.is_file() {
-        fs::copy(source, plugin_dir.join("aw-tab-bar.wasm"))?;
+        fs::copy(source, &installed)?;
+        grant_aw_tab_bar_permissions(&installed)?;
     }
     Ok(())
+}
+
+fn grant_aw_tab_bar_permissions(plugin_path: &Path) -> Result<()> {
+    let cache_path = zellij_permissions_cache_path();
+    if let Some(parent) = cache_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    let plugin_url = format!("file:{}", plugin_path.display());
+    let plugin_path = plugin_path.display().to_string();
+    let existing = fs::read_to_string(&cache_path).unwrap_or_default();
+    let grant_names = [
+        plugin_url.as_str(),
+        plugin_path.as_str(),
+        "aw-tab-bar",
+        "aw-tab-bar.wasm",
+    ];
+
+    let mut next = existing;
+    for grant_name in grant_names {
+        next = remove_permission_block(&next, grant_name);
+        if !next.is_empty() && !next.ends_with('\n') {
+            next.push('\n');
+        }
+        next.push_str(&format!(
+            "{} {{\n    ReadApplicationState\n    ChangeApplicationState\n    RunCommands\n}}\n",
+            kdl_identifier(grant_name)
+        ));
+    }
+    fs::write(cache_path, next)?;
+    Ok(())
+}
+
+fn zellij_permissions_cache_path() -> PathBuf {
+    env::var_os("XDG_CACHE_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home_dir().join(".cache"))
+        .join("zellij/permissions.kdl")
+}
+
+fn remove_permission_block(contents: &str, plugin_url: &str) -> String {
+    let quoted = format!("{} {{", kdl_identifier(plugin_url));
+    let mut output = String::new();
+    let mut skipping = false;
+
+    for line in contents.lines() {
+        if !skipping && line.trim() == quoted {
+            skipping = true;
+            continue;
+        }
+        if skipping {
+            if line.trim() == "}" {
+                skipping = false;
+            }
+            continue;
+        }
+        output.push_str(line);
+        output.push('\n');
+    }
+
+    output
+}
+
+fn kdl_identifier(value: &str) -> String {
+    format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
 }
 
 fn ensure_codex_status_line() -> Result<()> {

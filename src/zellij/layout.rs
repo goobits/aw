@@ -68,7 +68,7 @@ fn tab_bar_template(tabs_file: &Path) -> String {
                 .and_then(|name| name.to_str())
                 .unwrap_or("workspace");
             return format!(
-                "    default_tab_template {{\n        pane size=1 borderless=true {{\n            plugin location=\"file:{}\" {{\n                workspace \"{}\"\n                aw \"aw\"\n            }}\n        }}\n        children\n    }}\n\n",
+                "    default_tab_template {{\n        pane size=1 borderless=true {{\n            plugin location=\"file:{}\" _allow_exec_host_cmd=true {{\n                workspace \"{}\"\n                aw \"aw\"\n            }}\n        }}\n        children\n    }}\n\n",
                 kdl_escape(&plugin_path.to_string_lossy()),
                 kdl_escape(workspace)
             );

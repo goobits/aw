@@ -5,6 +5,8 @@ description: 'Use when the user invokes $x-logging or /x-logging, asks to design
 
 # X Logging
 
+Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+
 Use this skill to make logging structured, contextual, and useful without
 adding noise. It is based on `.llm/scratch/prompt-palette/logging.md`.
 
@@ -88,6 +90,9 @@ Run lightweight checks appropriate to the change:
 - No broad build unless explicitly approved.
 
 ## Output
+
+Style final output directly with the shared colorful vocabulary. The fenced
+block is a structure template, not literal output.
 
 ```text
 ▌ Logging

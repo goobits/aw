@@ -85,6 +85,9 @@ project-specific paths, commands, and commit rules in those files.
 
 ## Output
 
+Style final output directly with the shared colorful vocabulary. The fenced
+block is a structure template, not literal output.
+
 Lead with cross-surface findings. When implementation paths are known, the
 consolidation plan must use the canonical `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) phase format.
 If `Total LOC` is positive, add one short `Why net-positive is still

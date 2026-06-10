@@ -39,6 +39,9 @@ If the proposal is not solid, identify the specific parts that introduce cruft, 
 
 Prefer this outcome shape:
 
+Style verdicts, keeps, required changes, blockers, and verification with shared
+colors when useful.
+
 - `Verdict`: **A++**, **Mostly solid**, or **Needs revision**.
 - `Keep`: the parts of the proposal that are structurally sound.
 - `Change`: the parts to revise, with concise reasons.

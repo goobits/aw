@@ -68,6 +68,7 @@ fn render_layout_uses_aw_tab_bar_when_profile_opts_in_and_plugin_exists() {
 
     let rendered = stdout(&output);
     assert!(rendered.contains(&format!("plugin location=\"file:{}\"", plugin.display())));
+    assert!(rendered.contains("_allow_exec_host_cmd=true"));
     assert!(rendered.contains("workspace \"front\""));
     assert!(!rendered.contains("zellij:tab-bar"));
 }

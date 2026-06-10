@@ -76,6 +76,9 @@ commit, then reports any unpushed nested commit as a push/share warning only.
 
 ## Reporting
 
+Style completed phases, remaining work, verification, commits, and blockers
+with shared colors when useful.
+
 Keep status terse while working:
 
 - **Phase N: done**

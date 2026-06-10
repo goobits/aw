@@ -90,6 +90,9 @@ only when needed to identify the finding.
 
 ## Output
 
+Style verdicts, blockers, warnings, checked scope, and next steps with shared
+colors when useful.
+
 Lead with the push verdict:
 
 **Verdict**
