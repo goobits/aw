@@ -39,8 +39,16 @@ the user explicitly asks for a direct local commit.
 
 When the user says `$x-commit next`, `$x-commit next --root <queue-root>`,
 "commit next", "drain the commit queue", or the `git` tab is poked with
-`$x-commit next`, consume the next safe request from `aw commit next`, passing
-through `--root <queue-root>` when provided.
+`$x-commit next`, drain the queue by default: consume safe requests from
+`aw commit next` in a loop (passing through `--root <queue-root>` when provided)
+until `aw commit next` reports no safe pending request. Do not stop at the first
+"no safe pending" result while blocked tickets remain. Once safe requests are
+exhausted, automatically run the Blocked Queue Reconciliation pass below, then
+re-check for newly unblocked safe requests, and repeat until the queue is
+genuinely empty or only tickets with a concrete, current safety reason remain.
+
+Only do a single-item pass when the user explicitly scopes it that way, such as
+"just the next ticket", "next one only", or "don't touch blocked".
 
 Queue requests live under `.llm/commit-queue/` and are commit intent tickets, not
 patches. The filesystem remains the source of truth.
@@ -93,8 +101,8 @@ For each queue request:
 
 `blocked/` is a triage lane, not a graveyard. A commit owner should not finish a
 queue-drain report with old blocked tickets sitting untouched unless those
-tickets were actively rechecked in this run or the user asked only for the next
-pending request.
+tickets were actively rechecked in this run or the user explicitly scoped the
+run to a single ticket.
 
 If multiple pending requests claim the same path, do not guess. Block or report
 the overlap so the owner can order or merge the requests intentionally.

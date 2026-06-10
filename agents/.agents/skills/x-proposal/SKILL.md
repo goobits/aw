@@ -22,6 +22,8 @@ When the user asks about coding strategy, implementation approach, tradeoffs, or
 
 Each proposed phase must be independently stoppable: it should leave the repo in a coherent state, avoid known breakage, include its own verification step, and not depend on uncommitted follow-up work to be safe.
 
+The verification step should default to the lightest sufficient check: a typecheck, an existing test, a build, or a manual step. Only propose a new test when the change introduces behavior that no existing check covers, and treat any new test file as a `+` surface subject to the Existing-First Guard below. Do not add tests as filler verification when an existing check already proves the slice.
+
 When sequencing matters, phases must be ordered by operations/dependencies:
 earlier phases should unblock later phases, and verification should happen as
 soon as the relevant slice can be proven.
@@ -49,13 +51,13 @@ When phases are useful, group by numbered phase:
 ```text
 Phase 1: Short goal
 LOC: +N / -N
-Verify: targeted check or test
+Verify: lightest sufficient check (typecheck, existing test, build, or manual step)
 ~ path/to/file.ts
 + path/to/new-file.ts
 
 Phase 2: Short goal
 LOC: +N / -N
-Verify: targeted check or test
+Verify: lightest sufficient check (typecheck, existing test, build, or manual step)
 - path/to/old-file.ts
 ~ path/to/caller.ts
 

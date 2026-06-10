@@ -1,0 +1,23 @@
+{
+  "id": "1781040250166-add-aw-tab-bar-plugin-support-d23d78",
+  "title": "Add AW tab bar plugin support",
+  "owner": "developer",
+  "summary": "Adds optional AW tab-bar layout/install support, plugin permission/status handling, focused tests, and TODO notes for remaining non-destructive drag/rename hardening. Co-authored-by: Miko Meow <101564+mudcube@users.noreply.github.com>",
+  "paths": [
+    "TODO.md",
+    "plugins/aw-tab-bar/README.md",
+    "plugins/aw-tab-bar/src/main.rs",
+    "plugins/aw-tab-bar/src/state.rs",
+    "src/install/mod.rs",
+    "src/zellij/layout.rs",
+    "tests/install_contract.rs",
+    "tests/layout_contract.rs"
+  ],
+  "verification": [
+    "cargo test --manifest-path /workspace/infra/aw/Cargo.toml --test install_contract --test layout_contract",
+    "CARGO_TARGET_DIR=/tmp/aw-tab-bar-host-test cargo test --manifest-path /workspace/infra/aw/plugins/aw-tab-bar/Cargo.toml"
+  ],
+  "fingerprints": null,
+  "createdAt": "1781040250166",
+  "doneAt": "1781066381095"
+}
