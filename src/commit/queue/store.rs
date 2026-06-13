@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::commit_queue::types::{
     CommitRequest, Fingerprints, QueueBlocker, QueueRead, QueueReport,
@@ -237,17 +237,6 @@ pub fn wait(root: Option<&str>, id: &str, timeout: Duration, poll: Duration) -> 
     }
 }
 
-pub fn read_json_for(action: &str, root_args: &[String]) -> Result<Value> {
-    match action {
-        "check" => {
-            let root = parse_root(root_args)?;
-            let report = check(root.as_deref())?;
-            Ok(serde_json::to_value(report).unwrap_or(Value::Null))
-        }
-        _ => Ok(Value::Null),
-    }
-}
-
 pub fn parse_duration(value: &str) -> Result<Duration> {
     let trimmed = value.trim();
     let (amount, unit) = if let Some(value) = trimmed.strip_suffix("ms") {
@@ -268,19 +257,6 @@ pub fn parse_duration(value: &str) -> Result<Duration> {
         "m" => Duration::from_secs(amount * 60),
         _ => Duration::from_millis(amount),
     })
-}
-
-pub fn print_report(report: &QueueReport) {
-    println!("Queue: {}", report.queue_root);
-    println!("Pending: {}", report.pending);
-    if report.blockers.is_empty() {
-        println!("No blockers.");
-        return;
-    }
-    println!("Blockers:");
-    for blocker in &report.blockers {
-        println!("- {}: {}", blocker.kind, blocker.message);
-    }
 }
 
 pub(super) fn read_queue(queue_root: &Path, state: &str) -> QueueRead {
@@ -514,23 +490,6 @@ fn print_result_line(label: &str, value: &str) {
     println!("{label:<8} {value}");
 }
 
-fn parse_root(args: &[String]) -> Result<Option<String>> {
-    let mut root = None;
-    let mut index = 0;
-    while index < args.len() {
-        if args[index] == "--root" {
-            let value = args
-                .get(index + 1)
-                .ok_or_else(|| AwError::new("commitq: missing value for --root", 1))?;
-            root = Some(value.clone());
-            index += 2;
-        } else {
-            index += 1;
-        }
-    }
-    Ok(root)
-}
-
 fn resolve_queue_root(value: Option<&str>, repo_root: &Path) -> PathBuf {
     match value {
         Some(root) if Path::new(root).is_absolute() => PathBuf::from(root),
@@ -606,10 +565,4 @@ fn blocker(kind: &str, ids: Vec<String>, message: String) -> QueueBlocker {
         ids,
         message,
     }
-}
-
-pub fn candidate_to_json(candidate: Option<CommitRequest>) -> Value {
-    candidate
-        .map(|request| json!(request))
-        .unwrap_or(Value::Null)
 }

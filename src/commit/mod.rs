@@ -33,10 +33,6 @@ pub fn run_commit_command(args: &[String]) -> Result<i32> {
             setup_commit_tab(rest)?;
             Ok(0)
         }
-        "add" => {
-            commit_add("add", rest)?;
-            Ok(0)
-        }
         "request" => {
             commit_request(rest)?;
             Ok(0)
@@ -56,7 +52,7 @@ pub fn run_commit_command(args: &[String]) -> Result<i32> {
             Ok(0)
         }
         "list" | "check" | "next" | "done" | "block" | "wait" => {
-            run_commit_queue_status(action, rest)
+            commit_queue::run_status(action, rest)
         }
         "poke" => {
             commit_poke(rest)?;
@@ -162,11 +158,11 @@ fn setup_commit_tab(args: &[String]) -> Result<()> {
     Ok(())
 }
 
-fn commit_add(action: &str, args: &[String]) -> Result<()> {
+fn commit_request_from_title(args: &[String]) -> Result<()> {
     if args.len() < 2 {
-        return Err(commit_usage(format!(
-            "aw: commit {action} requires a title and at least one path"
-        )));
+        return Err(commit_usage(
+            "aw: commit request requires a title and at least one path",
+        ));
     }
 
     let mut filtered = vec!["--title".to_string(), args[0].clone()];
@@ -222,7 +218,7 @@ fn commit_add(action: &str, args: &[String]) -> Result<()> {
             }
             other if other.starts_with("--") => {
                 return Err(commit_usage(format!(
-                    "aw: unknown commit {action} argument {other}"
+                    "aw: unknown commit request argument {other}"
                 )));
             }
             path => {
@@ -235,12 +231,12 @@ fn commit_add(action: &str, args: &[String]) -> Result<()> {
     }
 
     if path_count == 0 {
-        return Err(commit_usage(format!(
-            "aw: commit {action} requires at least one path"
-        )));
+        return Err(commit_usage(
+            "aw: commit request requires at least one path",
+        ));
     }
 
-    let request_file = run_commit_queue_capture("request", &filtered)?;
+    let request_file = commit_queue::capture("request", &filtered)?;
     let request_id = Path::new(request_file.trim())
         .file_stem()
         .and_then(|stem| stem.to_str())
@@ -285,7 +281,7 @@ fn commit_add(action: &str, args: &[String]) -> Result<()> {
             wait_args.push("--poll".to_string());
             wait_args.push(wait_poll);
         }
-        let status = run_commit_queue_status("wait", &wait_args)?;
+        let status = commit_queue::run_status("wait", &wait_args)?;
         if status != 0 {
             return Err(AwError::new("", status));
         }
@@ -298,7 +294,7 @@ fn commit_request(args: &[String]) -> Result<()> {
     if args.first().is_some_and(|arg| arg.starts_with("--")) {
         return commit_raw_request(args);
     }
-    commit_add("request", args)
+    commit_request_from_title(args)
 }
 
 fn commit_raw_request(args: &[String]) -> Result<()> {
@@ -338,7 +334,7 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
         }
     }
 
-    let output = run_commit_queue_capture("request", &filtered)?;
+    let output = commit_queue::capture("request", &filtered)?;
     print!("{}", output);
     if poke {
         poke_commit_tab(&poke_tab, None, None, root_arg(&root_value).as_deref())?;
@@ -401,7 +397,7 @@ fn print_commit_status(root: Option<&str>) -> Result<()> {
     let pending = pending_lines.len();
     let done = commit_list_count(Some("done"), &root_args)?;
     let blocked = commit_list_count(Some("blocked"), &root_args)?;
-    let check = run_commit_queue_json("check", &append_args(&root_args, &["--json"]))?;
+    let check = commit_queue_json("check", &append_args(&root_args, &["--json"]))?;
     let unsafe_count = check
         .get("blockers")
         .and_then(Value::as_array)
@@ -503,7 +499,7 @@ fn commit_list_lines(state: Option<&str>, root_args: &[String]) -> Result<Vec<St
         args.push(state.to_string());
     }
     args.extend(root_args.iter().cloned());
-    let output = run_commit_queue_capture("list", &args)?;
+    let output = commit_queue::capture("list", &args)?;
     Ok(output
         .lines()
         .map(str::trim)
@@ -529,7 +525,7 @@ fn print_commit_doctor(root: Option<&str>) -> Result<()> {
     let pending = commit_list_count(None, &root_args)?;
     let done = commit_list_count(Some("done"), &root_args)?;
     let blocked = commit_list_count(Some("blocked"), &root_args)?;
-    let check = run_commit_queue_json("check", &append_args(&root_args, &["--json"]))?;
+    let check = commit_queue_json("check", &append_args(&root_args, &["--json"]))?;
     let blockers = check
         .get("blockers")
         .and_then(Value::as_array)
@@ -626,7 +622,7 @@ fn parse_root_only(args: &[String], action: &str) -> Result<Option<String>> {
 }
 
 fn next_request_line(root_args: &[String]) -> Result<Option<String>> {
-    let output = run_commit_queue_capture_allow_failure("next", root_args)?;
+    let output = commit_queue::capture("next", root_args).unwrap_or_default();
     let line = output.lines().next().unwrap_or("");
     if line.is_empty() || line == "No safe pending commit request." {
         Ok(None)
@@ -635,20 +631,9 @@ fn next_request_line(root_args: &[String]) -> Result<Option<String>> {
     }
 }
 
-fn run_commit_queue_status(action: &str, args: &[String]) -> Result<i32> {
-    commit_queue::run_status(action, args)
-}
-
-fn run_commit_queue_capture(action: &str, args: &[String]) -> Result<String> {
-    commit_queue::capture(action, args)
-}
-
-fn run_commit_queue_capture_allow_failure(action: &str, args: &[String]) -> Result<String> {
-    commit_queue::capture_allow_failure(action, args)
-}
-
-fn run_commit_queue_json(action: &str, args: &[String]) -> Result<Value> {
-    commit_queue::json(action, args)
+fn commit_queue_json(action: &str, args: &[String]) -> Result<Value> {
+    serde_json::from_str(&commit_queue::capture(action, args)?)
+        .map_err(|error| AwError::new(error.to_string(), 1))
 }
 
 fn root_arg(root: &str) -> Option<String> {

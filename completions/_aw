@@ -114,7 +114,7 @@ _aw() {
             compadd -- --tab --session --agent --no-agent
           fi
           ;;
-        request|add)
+        request)
           compadd -- --check --verify --root --summary --owner --must-contain --must-not-contain --poke --wait --timeout --poll
           _files
           ;;

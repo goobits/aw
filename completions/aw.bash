@@ -106,7 +106,7 @@ _aw_completion() {
               COMPREPLY=( $(compgen -W "--tab --session --agent --no-agent" -- "$cur") )
             fi
             ;;
-          request|add)
+          request)
             COMPREPLY=( $(compgen -W "--check --verify --root --summary --owner --must-contain --must-not-contain --poke --wait --timeout --poll" -- "$cur") )
             _aw_file_replies
             ;;

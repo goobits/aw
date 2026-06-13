@@ -5,9 +5,8 @@ mod types;
 
 use std::time::Duration;
 
-use serde_json::Value;
-
 use crate::commit_queue::store::{MoveInput, RequestInput};
+use crate::commit_queue::types::{CommitRequest, QueueReport};
 use crate::error::{AwError, Result};
 
 pub fn run_status(action: &str, args: &[String]) -> Result<i32> {
@@ -24,28 +23,13 @@ pub fn run_status(action: &str, args: &[String]) -> Result<i32> {
         "check" => {
             let (root, json) = parse_check_args(args)?;
             let report = store::check(root.as_deref())?;
-            if json {
-                println!("{}", serde_json::to_string_pretty(&report).unwrap());
-            } else {
-                store::print_report(&report);
-            }
+            print!("{}", render_check(&report, json));
             Ok(if report.blockers.is_empty() { 0 } else { 1 })
         }
         "next" => {
             let (root, json) = parse_next_args(args)?;
             let (candidate, report) = store::next(root.as_deref())?;
-            if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&store::candidate_to_json(candidate.clone()))
-                        .unwrap()
-                );
-            } else if let Some(request) = &candidate {
-                println!("{}\t{}", request.id, request.title);
-                println!("{}", request.file);
-            } else {
-                println!("No safe pending commit request.");
-            }
+            print!("{}", render_next(candidate.as_ref(), json));
             Ok(if candidate.is_some() || report.blockers.is_empty() {
                 0
             } else {
@@ -83,43 +67,12 @@ pub fn capture(action: &str, args: &[String]) -> Result<String> {
         "next" => {
             let (root, json) = parse_next_args(args)?;
             let (candidate, _report) = store::next(root.as_deref())?;
-            if json {
-                Ok(format!(
-                    "{}\n",
-                    serde_json::to_string_pretty(&store::candidate_to_json(candidate)).unwrap()
-                ))
-            } else if let Some(request) = candidate {
-                Ok(format!(
-                    "{}\t{}\n{}\n",
-                    request.id, request.title, request.file
-                ))
-            } else {
-                Ok("No safe pending commit request.\n".to_string())
-            }
+            Ok(render_next(candidate.as_ref(), json))
         }
         "check" => {
             let (root, json) = parse_check_args(args)?;
             let report = store::check(root.as_deref())?;
-            if json {
-                Ok(format!(
-                    "{}\n",
-                    serde_json::to_string_pretty(&report).unwrap()
-                ))
-            } else {
-                let mut text = format!(
-                    "Queue: {}\nPending: {}\n",
-                    report.queue_root, report.pending
-                );
-                if report.blockers.is_empty() {
-                    text.push_str("No blockers.\n");
-                } else {
-                    text.push_str("Blockers:\n");
-                    for blocker in &report.blockers {
-                        text.push_str(&format!("- {}: {}\n", blocker.kind, blocker.message));
-                    }
-                }
-                Ok(text)
-            }
+            Ok(render_check(&report, json))
         }
         "done" | "block" => store::move_request(parse_move_args(args)?, action),
         _ => Err(AwError::new(
@@ -129,12 +82,34 @@ pub fn capture(action: &str, args: &[String]) -> Result<String> {
     }
 }
 
-pub fn capture_allow_failure(action: &str, args: &[String]) -> Result<String> {
-    capture(action, args).or_else(|_| Ok(String::new()))
+fn render_check(report: &QueueReport, json: bool) -> String {
+    if json {
+        return format!("{}\n", serde_json::to_string_pretty(report).unwrap());
+    }
+
+    let mut text = format!(
+        "Queue: {}\nPending: {}\n",
+        report.queue_root, report.pending
+    );
+    if report.blockers.is_empty() {
+        text.push_str("No blockers.\n");
+    } else {
+        text.push_str("Blockers:\n");
+        for blocker in &report.blockers {
+            text.push_str(&format!("- {}: {}\n", blocker.kind, blocker.message));
+        }
+    }
+    text
 }
 
-pub fn json(action: &str, args: &[String]) -> Result<Value> {
-    store::read_json_for(action, args)
+fn render_next(candidate: Option<&CommitRequest>, json: bool) -> String {
+    if json {
+        return format!("{}\n", serde_json::to_string_pretty(&candidate).unwrap());
+    }
+
+    candidate
+        .map(|request| format!("{}\t{}\n{}\n", request.id, request.title, request.file))
+        .unwrap_or_else(|| "No safe pending commit request.\n".to_string())
 }
 
 fn parse_request_args(args: &[String]) -> Result<RequestInput> {
