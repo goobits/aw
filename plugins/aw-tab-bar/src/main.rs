@@ -36,6 +36,15 @@ struct PluginState {
 
 register_plugin!(PluginState);
 
+fn probe_log(tok: &str) {
+    let mut ctx = BTreeMap::new();
+    ctx.insert("source".to_string(), "probe".to_string());
+    run_command(
+        &["sh", "-c", &format!("echo {} >> /tmp/mouse-events.log", tok)],
+        ctx,
+    );
+}
+
 impl ZellijPlugin for PluginState {
     fn load(&mut self, configuration: BTreeMap<String, String>) {
         self.config = Config::from(configuration);
@@ -84,6 +93,7 @@ impl ZellijPlugin for PluginState {
                 true
             }
             Event::Mouse(Mouse::LeftClick(_, col)) => {
+                probe_log(&format!("LC{}", col)); // DEBUG
                 self.tabs.clear_status();
                 self.tabs.click(col);
                 if self.tabs.rename().is_none() {
@@ -93,10 +103,12 @@ impl ZellijPlugin for PluginState {
                 true
             }
             Event::Mouse(Mouse::Hold(_, col)) => {
+                probe_log(&format!("H{}", col)); // DEBUG
                 self.tabs.hold(col);
                 true
             }
             Event::Mouse(Mouse::Release(_, col)) => {
+                probe_log(&format!("R{}", col)); // DEBUG
                 if let Some(command) = self.tabs.release(col) {
                     self.run_tab_command(command);
                 }
