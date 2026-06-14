@@ -52,6 +52,48 @@ fn namespace_help_is_scoped() {
 }
 
 #[test]
+fn namespace_errors_are_scoped() {
+    for (args, expected, unexpected) in [
+        (
+            vec!["owner"],
+            "aw: owner requires git or pkg",
+            "aw: Zero-friction Zellij workspaces",
+        ),
+        (
+            vec!["repo", "bogus"],
+            "aw: unknown repo command bogus",
+            "commit queue:",
+        ),
+        (
+            vec!["commit", "bogus"],
+            "aw: unknown commit action bogus",
+            "workspaces:",
+        ),
+        (
+            vec!["install", "--surprise"],
+            "aw: unknown install argument --surprise",
+            "commit queue:",
+        ),
+        (
+            vec!["paths", "extra"],
+            "aw: paths does not accept arguments",
+            "workspaces:",
+        ),
+        (
+            vec!["ps", "extra"],
+            "aw: ps does not accept arguments",
+            "commit queue:",
+        ),
+    ] {
+        let output = aw().args(args).output().expect("run aw error case");
+        assert!(!output.status.success());
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(stderr.contains(expected), "{stderr}");
+        assert!(!stderr.contains(unexpected), "{stderr}");
+    }
+}
+
+#[test]
 fn paths_reports_aw_home_layout() {
     let output = aw().arg("paths").output().expect("run aw paths");
     assert!(output.status.success());

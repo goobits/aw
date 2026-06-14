@@ -9,7 +9,7 @@ use crate::paths::{
     aw_config_file, aw_private_bin_dir, aw_profile_dir_candidates, home_dir, is_executable,
     local_bin_dir, path_string, validate_name,
 };
-use crate::profile::{install_profile, profile_value};
+use crate::profile::{default_session_name_from_profile_dir, install_profile, profile_value};
 use crate::tab_order::{live_tab_order, saved_session_order, session_tab_order};
 use crate::tabs::read_tab_lines;
 use crate::watcher::watcher_command;
@@ -79,17 +79,17 @@ fn zwork_command(args: &[String]) -> Result<i32> {
 
     let profile_dir = resolve_profile_dir(profile)?;
     let root = profile_value(&profile_dir.join("profile.conf"), "root", "/workspace");
-    let session = args
-        .get(2)
-        .filter(|s| !s.is_empty())
-        .cloned()
-        .unwrap_or_else(|| workspace.clone());
     let workdir = args
         .get(3)
         .filter(|s| !s.is_empty())
         .cloned()
         .or_else(|| env::var("ZELLIJ_WORKDIR").ok())
         .unwrap_or(root);
+    let session = args
+        .get(2)
+        .filter(|s| !s.is_empty())
+        .cloned()
+        .unwrap_or_default();
     open_session(&profile_dir, workspace, &session, &workdir)
 }
 
@@ -115,7 +115,7 @@ fn open_session(profile_dir: &Path, workspace: &str, session: &str, workdir: &st
             1,
         ));
     }
-    let profile_name = profile_dir
+    let fallback_profile_name = profile_dir
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or("profile")
@@ -128,6 +128,11 @@ fn open_session(profile_dir: &Path, workspace: &str, session: &str, workdir: &st
             }
         })
         .collect::<String>();
+    let profile_name = profile_value(
+        &profile_dir.join("profile.conf"),
+        "name",
+        &fallback_profile_name,
+    );
     let session_spec = profile_dir.join(format!("{}.tabs", workspace));
     if !session_spec.is_file() {
         return Err(AwError::new(
@@ -143,7 +148,12 @@ fn open_session(profile_dir: &Path, workspace: &str, session: &str, workdir: &st
     let layout_file = layout_dir.join(format!("{}-{}.kdl", profile_name, workspace));
     fs::write(&layout_file, render_layout(&session_spec, workdir)?)?;
     let tab_order = read_tab_lines(&session_spec)?;
-    launch_session(&layout_file, session, workdir, &tab_order)
+    let session = if session.is_empty() {
+        default_session_name_from_profile_dir(profile_dir, workspace)
+    } else {
+        session.to_string()
+    };
+    launch_session(&layout_file, &session, workdir, &tab_order)
 }
 
 fn launch_session_command(args: &[String]) -> Result<i32> {
@@ -477,7 +487,8 @@ fn doctor(config_dir: &str) -> Result<i32> {
                     &target.join(tabs_file.file_name().unwrap_or_default()),
                     &mut failures,
                 );
-                check_runtime_workspace_order(&workspace, &tabs_file, &mut failures);
+                let session = default_session_name_from_profile_dir(&config, &workspace);
+                check_runtime_workspace_order(&workspace, &session, &tabs_file, &mut failures);
             }
         }
     }
@@ -491,13 +502,25 @@ fn doctor(config_dir: &str) -> Result<i32> {
     Ok(0)
 }
 
-fn check_runtime_workspace_order(workspace: &str, tabs_file: &Path, failures: &mut i32) {
+fn check_runtime_workspace_order(
+    workspace: &str,
+    session: &str,
+    tabs_file: &Path,
+    failures: &mut i32,
+) {
     let expected = tabs_file_order(tabs_file);
     if expected.is_empty() {
         return;
     }
-    if session_exists(workspace).unwrap_or(false) {
-        let live = live_session_order(workspace);
+    let live_session = if session_exists(session).unwrap_or(false) {
+        Some(session)
+    } else if session != workspace && session_exists(workspace).unwrap_or(false) {
+        Some(workspace)
+    } else {
+        None
+    };
+    if let Some(live_session) = live_session {
+        let live = live_session_order(live_session);
         if !live.is_empty() {
             if live == expected {
                 println!("ok: live tab order {}", workspace);
@@ -510,7 +533,10 @@ fn check_runtime_workspace_order(workspace: &str, tabs_file: &Path, failures: &m
             }
         }
     }
-    let saved = saved_layout_order(workspace);
+    let mut saved = saved_layout_order(session);
+    if saved.is_empty() && session != workspace {
+        saved = saved_layout_order(workspace);
+    }
     if !saved.is_empty() {
         if saved == expected {
             println!("ok: saved tab order {}", workspace);

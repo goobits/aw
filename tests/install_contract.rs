@@ -94,24 +94,26 @@ fn install_writes_public_binary_private_helpers_config_and_completions() {
 
     let bash_completion = fs::read_to_string(home.home.join(".aw/completions/aw.bash")).unwrap();
     assert!(bash_completion.contains(
-        "--check --verify --root --summary --owner --must-contain --must-not-contain --poke --wait --timeout --poll"
+        "--check --verify --queue-root --root --summary --owner --must-contain --must-not-contain --poke --workspace --session --wait --timeout --poll"
     ));
-    assert!(bash_completion.contains("git --root"));
+    assert!(bash_completion.contains("git --queue-root --root --workspace --session"));
     assert!(bash_completion.contains("status|doctor)"));
     assert!(bash_completion.contains("doctor)"));
     assert!(bash_completion.contains("migrate)"));
     assert!(bash_completion.contains("routes)"));
     assert!(bash_completion.contains("doctor paths repo"));
+    assert!(bash_completion.contains("tab session commit"));
     assert!(bash_completion.contains("wait)"));
 
     let zsh_completion = fs::read_to_string(home.home.join(".aw/completions/_aw")).unwrap();
     assert!(zsh_completion.contains(
-        "--check --verify --root --summary --owner --must-contain --must-not-contain --poke --wait --timeout --poll"
+        "--check --verify --queue-root --root --summary --owner --must-contain --must-not-contain --poke --workspace --session --wait --timeout --poll"
     ));
-    assert!(zsh_completion.contains("git --root"));
+    assert!(zsh_completion.contains("git --queue-root --root --workspace --session"));
     assert!(zsh_completion
         .contains("doctor migrate clean measure-git probe-git-config routes worktree"));
     assert!(zsh_completion.contains("doctor paths repo"));
+    assert!(zsh_completion.contains("tab session commit"));
     assert!(!zsh_completion.contains("Git --root"));
 
     let config = fs::read_to_string(home.home.join(".aw/config.kdl")).unwrap();

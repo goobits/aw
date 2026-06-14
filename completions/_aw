@@ -71,6 +71,11 @@ _aw_complete_tab_command() {
     return
   fi
 
+  if [[ "${words[$CURRENT]:-}" == --* ]]; then
+    compadd -- --session
+    return
+  fi
+
   case "$action" in
     list|refresh)
       [[ -z "$workspace" && "$CURRENT" -eq "$first_arg_index" && -z "$(_aw_single_workspace)" ]] && _aw_workspaces
@@ -94,7 +99,7 @@ _aw_complete_tab_command() {
 
 _aw() {
   local -a commands tab_commands commit_commands repo_commands owner_commands
-  commands=(help install setup doctor paths repo list create refresh rename remove tab commit owner ps kill)
+  commands=(help install setup doctor paths repo list create refresh rename remove tab session commit owner ps kill)
   tab_commands=(list add move rename remove refresh)
   commit_commands=(setup request status doctor wait poke)
   repo_commands=(doctor migrate clean measure-git probe-git-config routes worktree)
@@ -115,17 +120,17 @@ _aw() {
           fi
           ;;
         request)
-          compadd -- --check --verify --root --summary --owner --must-contain --must-not-contain --poke --wait --timeout --poll
+          compadd -- --check --verify --queue-root --root --summary --owner --must-contain --must-not-contain --poke --workspace --session --wait --timeout --poll
           _files
           ;;
         status|doctor)
-          compadd -- --root
+          compadd -- --queue-root --root
           ;;
         wait)
-          compadd -- --root --timeout --poll
+          compadd -- --queue-root --root --timeout --poll
           ;;
         poke)
-          compadd -- git --root
+          compadd -- git --queue-root --root --workspace --session
           ;;
       esac
       ;;
@@ -156,6 +161,16 @@ _aw() {
       case "${words[3]:-}" in
         "")
           compadd -- "${owner_commands[@]}"
+          ;;
+      esac
+      ;;
+    session)
+      case "${words[3]:-}" in
+        "")
+          compadd -- name
+          ;;
+        name)
+          [[ "$CURRENT" -eq 4 ]] && _aw_workspaces
           ;;
       esac
       ;;

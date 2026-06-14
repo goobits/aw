@@ -40,7 +40,7 @@ the user explicitly asks for a direct local commit.
 When the user says `$x-commit next`, `$x-commit next --root <queue-root>`,
 "commit next", "drain the commit queue", or the `git` tab is poked with
 `$x-commit next`, drain the queue by default: consume safe requests from
-`aw commit next` in a loop (passing through `--root <queue-root>` when provided)
+`aw commit next` in a loop (passing through `--queue-root <queue-root>` when provided)
 until `aw commit next` reports no safe pending request. Do not stop at the first
 "no safe pending" result while blocked tickets remain. Once safe requests are
 exhausted, automatically run the Blocked Queue Reconciliation pass below, then
@@ -56,14 +56,18 @@ patches. The filesystem remains the source of truth.
 Expected operator setup:
 
 - Use `aw commit setup` once per checkout to add a `git` tab and start the
-  commit-owner agent there. If the live session name differs from the workspace
-  name, use `aw commit setup <workspace> --session <name>`.
+  commit-owner agent there. By default it targets AW's checkout-scoped session
+  for that workspace. Use `aw commit setup <workspace> --session <name>` only
+  when the checkout intentionally uses an explicit shared/resumed session name.
 - Run one commit-owner agent per checkout. Do not run competing Git agents
   against the same `.llm/commit-queue/`; `aw commit next` is a read-only
   handoff, not an atomic claim.
 - Other tabs submit normal handoffs with
   `aw commit request "Title" path... --check "cmd" --poke git`, which sends
-  `$x-commit next` to the `git` tab.
+  `$x-commit next` to the `git` tab in this checkout's resolved default
+  session. Pass `--workspace <workspace>` when the commit tab lives in a
+  non-default workspace, and pass `--session <name>` only when intentionally
+  targeting an explicit shared/resumed session.
 - When later worker work is still inside an existing pending ticket's path
   scope, do not create another ticket. Re-run the relevant checks, use
   `aw commit poke`, and report `folded into pending <id>` with the checks that
@@ -73,10 +77,13 @@ Expected operator setup:
   `aw commit wait <id>` or use `aw commit request ... --wait` to wait for the
   request just created. Never wait for the whole queue; unrelated tickets may be
   ahead or behind the worker's request.
-- If a request uses `--root <queue-root>`, keep that same root for
+- If a request uses `--queue-root <path>`, keep that same queue root for
   `aw commit check`, `next`, `done`, and `block`.
-- Normal wakeups use `aw commit poke`. Keep `--root <queue-root>` only for
-  non-default queue roots used by tests, debugging, or special workflows.
+- Normal wakeups use `aw commit poke`, which resolves the checkout's default
+  session. Keep `--queue-root <path>` only for non-default queue roots used by
+  tests, debugging, or special workflows, `--workspace <workspace>` only for a
+  non-default commit workspace, and `--session <name>` only for intentional
+  explicit sessions.
 - Use `aw commit doctor` when the queue is blocked or confusing. It should be
   the first readable diagnostic before raw queue details.
 - Treat `aw commit raw-request/check/next/done/block/list` as queue plumbing for
@@ -85,8 +92,8 @@ Expected operator setup:
 
 For each queue request:
 
-1. Run `aw commit check` with the requested `--root` when one was provided.
-2. Run `aw commit next` with the requested `--root` when one was provided and
+1. Run `aw commit check` with the requested `--queue-root` when one was provided.
+2. Run `aw commit next` with the requested `--queue-root` when one was provided and
    read the returned request file.
 3. Inspect only the requested paths and confirm the current diff still matches
    the title, summary, and fingerprints.

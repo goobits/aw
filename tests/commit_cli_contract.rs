@@ -14,6 +14,29 @@ fn installed_home(name: &str) -> TestHome {
     home
 }
 
+fn expected_session(profile: &str, workspace: &str, root: &str) -> String {
+    let mut hash = 0xcbf29ce484222325_u64;
+    for byte in root.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("{profile}-{workspace}-{hash:016x}")
+}
+
+fn assert_order(path: impl AsRef<std::path::Path>, session: &str, tabs: &[&str]) {
+    let expected = std::iter::once(session)
+        .chain(tabs.iter().copied())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert_eq!(read(path).trim_end(), expected);
+}
+
+fn assert_captured_sessions(path: impl AsRef<std::path::Path>, expected: &str) {
+    let sessions = read(path);
+    assert!(!sessions.trim().is_empty());
+    assert!(sessions.lines().all(|line| line == expected), "{sessions}");
+}
+
 #[test]
 fn commit_queue_commands_create_wait_report_and_validate_requests() {
     let home = installed_home("commit-cli");
@@ -33,7 +56,7 @@ fn commit_queue_commands_create_wait_report_and_validate_requests() {
             "echo ok",
             "--must-contain",
             "Commit queue test",
-            "--root",
+            "--queue-root",
         ])
         .arg(&queue)
         .current_dir(&project)
@@ -41,7 +64,7 @@ fn commit_queue_commands_create_wait_report_and_validate_requests() {
         .expect("commit request");
     assert_success("commit request", &output);
     assert!(stdout(&output).starts_with("Created commit request "));
-    assert!(stdout(&output).contains("Run `aw commit poke git --root "));
+    assert!(stdout(&output).contains("Run `aw commit poke --queue-root "));
     assert_eq!(
         std::fs::read_dir(queue.join("pending"))
             .unwrap()
@@ -54,7 +77,13 @@ fn commit_queue_commands_create_wait_report_and_validate_requests() {
     let wait_queue = home.root.join("wait-queue");
     let wait_add = home
         .aw_command()
-        .args(["commit", "request", "Wait docs", "README.md", "--root"])
+        .args([
+            "commit",
+            "request",
+            "Wait docs",
+            "README.md",
+            "--queue-root",
+        ])
         .arg(&wait_queue)
         .args(["--check", "echo ok"])
         .current_dir(&project)
@@ -331,6 +360,7 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
         profile.join("front.tabs"),
         "tools\nsearch\ncomponents\nskills\nscratch\n",
     );
+    temp::write(profile.join("backend.tabs"), "api\ngit\nscratch\n");
     assert_success(
         "setup profile",
         &home
@@ -350,9 +380,11 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
         "key-panes.txt",
         "sent-keys.txt",
         "sleep-calls.txt",
+        "session-names.txt",
     ] {
         temp::write(home.root.join(file), "");
     }
+    let front_session = expected_session("my-site", "front", &project.display().to_string());
     let output = home
         .aw_command()
         .args(["commit", "poke", "git"])
@@ -368,6 +400,10 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
         .env("FAKE_ZELLIJ_KEY_PANES", home.root.join("key-panes.txt"))
         .env("FAKE_ZELLIJ_SENT_KEYS", home.root.join("sent-keys.txt"))
         .env("FAKE_SLEEP_CALLS", home.root.join("sleep-calls.txt"))
+        .env(
+            "FAKE_ZELLIJ_SESSION_NAMES",
+            home.root.join("session-names.txt"),
+        )
         .current_dir(&project)
         .output()
         .expect("commit poke");
@@ -378,6 +414,7 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
     assert_eq!(read(home.root.join("key-panes.txt")).trim_end(), "1");
     assert_eq!(read(home.root.join("sent-keys.txt")).trim_end(), "Enter");
     assert_eq!(read(home.root.join("sleep-calls.txt")).trim_end(), "0.4");
+    assert_captured_sessions(home.root.join("session-names.txt"), &front_session);
     assert!(read(&tabs).contains("0\t0\ttrue\ttools"));
 
     for file in [
@@ -420,15 +457,19 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
     assert_success("commit setup", &setup);
     assert_eq!(
         stdout(&setup),
-        "Commit tab git is ready in front and received `codex`."
+        format!(
+            "Commit tab git is ready in {} and received `codex`.",
+            front_session
+        )
     );
     assert_eq!(
         read(profile.join("front.tabs")).lines().last().unwrap(),
         "git"
     );
-    assert_eq!(
-        read(home.root.join("front-commit-setup-order.txt")).trim_end(),
-        "front\ntools\nsearch\ncomponents\nskills\nscratch\ngit"
+    assert_order(
+        home.root.join("front-commit-setup-order.txt"),
+        &front_session,
+        &["tools", "search", "components", "skills", "scratch", "git"],
     );
     assert_eq!(read(home.root.join("setup-written-chars.txt")), "codex");
     assert_eq!(
@@ -498,6 +539,84 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
         .expect("no agent setup");
     assert_success("no agent setup", &no_agent);
     assert_eq!(stdout(&no_agent), "Commit tab git is ready in sketch-api.");
+
+    temp::write(home.root.join("session-names.txt"), "");
+    let explicit_poke = home
+        .aw_command()
+        .args(["commit", "poke", "git", "--session", "sketch-api"])
+        .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env(
+            "FAKE_ZELLIJ_WRITTEN_CHARS",
+            home.root.join("written-chars.txt"),
+        )
+        .env("FAKE_ZELLIJ_SENT_KEYS", home.root.join("sent-keys.txt"))
+        .env("FAKE_SLEEP_CALLS", home.root.join("sleep-calls.txt"))
+        .env(
+            "FAKE_ZELLIJ_SESSION_NAMES",
+            home.root.join("session-names.txt"),
+        )
+        .current_dir(&project)
+        .output()
+        .expect("explicit session poke");
+    assert_success("explicit session poke", &explicit_poke);
+    assert_eq!(stdout(&explicit_poke), "Poked git with $x-commit next.");
+    assert_captured_sessions(home.root.join("session-names.txt"), "sketch-api");
+
+    temp::write(home.root.join("session-names.txt"), "");
+    let backend_session = expected_session("my-site", "backend", &project.display().to_string());
+    let workspace_poke = home
+        .aw_command()
+        .args(["commit", "poke", "git", "--workspace", "backend"])
+        .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env(
+            "FAKE_ZELLIJ_WRITTEN_CHARS",
+            home.root.join("written-chars.txt"),
+        )
+        .env("FAKE_ZELLIJ_SENT_KEYS", home.root.join("sent-keys.txt"))
+        .env("FAKE_SLEEP_CALLS", home.root.join("sleep-calls.txt"))
+        .env(
+            "FAKE_ZELLIJ_SESSION_NAMES",
+            home.root.join("session-names.txt"),
+        )
+        .current_dir(&project)
+        .output()
+        .expect("workspace session poke");
+    assert_success("workspace session poke", &workspace_poke);
+    assert_eq!(stdout(&workspace_poke), "Poked git with $x-commit next.");
+    assert_captured_sessions(home.root.join("session-names.txt"), &backend_session);
+
+    temp::write(home.root.join("session-names.txt"), "");
+    temp::write(home.root.join("written-chars.txt"), "");
+    let poke_queue = home.root.join("poke-queue");
+    let request_poke = home
+        .aw_command()
+        .args([
+            "commit",
+            "request",
+            "Poked docs",
+            "README.md",
+            "--queue-root",
+        ])
+        .arg(&poke_queue)
+        .args(["--poke", "git"])
+        .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env(
+            "FAKE_ZELLIJ_WRITTEN_CHARS",
+            home.root.join("written-chars.txt"),
+        )
+        .env("FAKE_ZELLIJ_SENT_KEYS", home.root.join("sent-keys.txt"))
+        .env("FAKE_SLEEP_CALLS", home.root.join("sleep-calls.txt"))
+        .env(
+            "FAKE_ZELLIJ_SESSION_NAMES",
+            home.root.join("session-names.txt"),
+        )
+        .current_dir(&project)
+        .output()
+        .expect("request poke");
+    assert_success("request poke", &request_poke);
+    assert!(stdout(&request_poke).starts_with("Created commit request "));
+    assert!(stdout(&request_poke).contains("Poked git with $x-commit next --root "));
+    assert_captured_sessions(home.root.join("session-names.txt"), &front_session);
 
     assert_failure(
         "missing setup tab",

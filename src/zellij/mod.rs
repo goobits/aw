@@ -14,7 +14,7 @@ use serde_json::Value;
 
 use crate::error::{AwError, Result};
 use crate::paths::{helper_path, path_string, validate_name};
-use crate::profile::profile_value;
+use crate::profile::{default_session_name_from_profile_dir, profile_value};
 use crate::tab_order::session_tab_order;
 use crate::tabs::{read_tab_lines, tab_name_from_line};
 
@@ -46,20 +46,32 @@ pub fn sync_workspace_session(
         return Ok(());
     }
 
-    let default_cwd = profile_value(
+    let default_cwd = workspace_root(config_dir);
+
+    let session = session_name
+        .map(str::to_string)
+        .unwrap_or_else(|| default_workspace_session_name(config_dir, workspace));
+
+    env::set_var("ZELLIJ_SESSION_TAB_DEFAULT_CWD", default_cwd);
+    env::set_var("ZELLIJ_SESSION_TAB_ORDER_CREATE_MISSING", "1");
+    env::set_var("ZELLIJ_SESSION_TAB_ORDER_STRICT", "1");
+    session_tab_order(&session, &tab_order)?;
+    Ok(())
+}
+
+pub fn default_workspace_session_name(config_dir: &Path, workspace: &str) -> String {
+    default_session_name_from_profile_dir(config_dir, workspace)
+}
+
+fn workspace_root(config_dir: &Path) -> String {
+    profile_value(
         &config_dir.join("profile.conf"),
         "root",
         &env::current_dir()
             .ok()
             .map(|path| path_string(&path))
             .unwrap_or_else(|| "/workspace".to_string()),
-    );
-
-    env::set_var("ZELLIJ_SESSION_TAB_DEFAULT_CWD", default_cwd);
-    env::set_var("ZELLIJ_SESSION_TAB_ORDER_CREATE_MISSING", "1");
-    env::set_var("ZELLIJ_SESSION_TAB_ORDER_STRICT", "1");
-    session_tab_order(session_name.unwrap_or(workspace), &tab_order)?;
-    Ok(())
+    )
 }
 
 fn live_tab_rows(session: &str, match_name: Option<&str>) -> Result<Vec<LiveTab>> {
@@ -100,8 +112,8 @@ fn live_tab_rows(session: &str, match_name: Option<&str>) -> Result<Vec<LiveTab>
     Ok(rows)
 }
 
-pub fn list_workspace_tabs(workspace: &str, tabs_file: &Path) -> Result<()> {
-    let rows = live_tab_rows(workspace, None)?;
+pub fn list_workspace_tabs(session: &str, tabs_file: &Path) -> Result<()> {
+    let rows = live_tab_rows(session, None)?;
     if !rows.is_empty() {
         for row in rows {
             let marker = if row.active { "*" } else { " " };
@@ -261,13 +273,6 @@ fn submit_enter_to_commit_pane(pane_id: Option<&str>, session: Option<&str>) -> 
     }
     args.push("Enter");
     zellij_action(session, &args)
-}
-
-pub fn installed_profile_dir(profile_name: &str) -> std::path::PathBuf {
-    crate::paths::aw_profile_dir_candidates(profile_name)
-        .into_iter()
-        .find(|path| path.is_dir())
-        .unwrap_or_else(|| crate::paths::aw_profiles_dir().join(profile_name))
 }
 
 pub fn ensure_workspace_tabs_file(

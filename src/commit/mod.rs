@@ -9,15 +9,18 @@ use crate::error::{AwError, Result};
 use crate::paths::{shell_quote, validate_name};
 use crate::profile::{default_workspace_from_config, find_config_dir, install_profile};
 use crate::tabs::upsert_workspace_tab_line;
-use crate::zellij::{ensure_workspace_tabs_file, send_to_commit_tab, sync_workspace_session};
+use crate::zellij::{
+    default_workspace_session_name, ensure_workspace_tabs_file, send_to_commit_tab,
+    sync_workspace_session,
+};
 
 const COMMIT_USAGE: &str = r#"usage:
   aw commit setup [workspace] [--tab git] [--session <name>] [--agent <cmd>|--no-agent]
-  aw commit request <title> <path>... [--check <cmd>] [--summary <text>] [--root <queue-root>] [--poke [tab]] [--wait] [--timeout 10m]
-  aw commit status [--root <queue-root>]
-  aw commit doctor [--root <queue-root>]
-  aw commit wait <id> [--root <queue-root>] [--timeout 10m]
-  aw commit poke [tab] [--root <queue-root>]"#;
+  aw commit request <title> <path>... [--check <cmd>] [--summary <text>] [--queue-root <path>] [--poke [tab]] [--workspace <workspace>] [--session <name>] [--wait] [--timeout 10m]
+  aw commit status [--queue-root <path>]
+  aw commit doctor [--queue-root <path>]
+  aw commit wait <id> [--queue-root <path>] [--timeout 10m]
+  aw commit poke [tab] [--queue-root <path>] [--workspace <workspace>] [--session <name>]"#;
 
 pub fn run_commit_command(args: &[String]) -> Result<i32> {
     let Some((action, rest)) = args.split_first() else {
@@ -52,7 +55,8 @@ pub fn run_commit_command(args: &[String]) -> Result<i32> {
             Ok(0)
         }
         "list" | "check" | "next" | "done" | "block" | "wait" => {
-            commit_queue::run_status(action, rest)
+            let normalized = normalize_queue_root_args(rest)?;
+            commit_queue::run_status(action, &normalized)
         }
         "poke" => {
             commit_poke(rest)?;
@@ -124,7 +128,7 @@ fn setup_commit_tab(args: &[String]) -> Result<()> {
     }
     validate_name("workspace", &workspace)?;
     if session_name.is_empty() {
-        session_name = workspace.clone();
+        session_name = default_workspace_session_name(&config_dir, &workspace);
     }
 
     let tabs_file = ensure_workspace_tabs_file(&config_dir, &workspace)?;
@@ -171,6 +175,8 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
     let mut root_value = String::new();
     let mut poke = false;
     let mut poke_tab = "git".to_string();
+    let mut session_name = String::new();
+    let mut workspace_name = String::new();
     let mut wait = false;
     let mut wait_timeout = String::new();
     let mut wait_poll = String::new();
@@ -183,7 +189,7 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
                 filtered.push(require_option_value(args, index)?.to_string());
                 index += 2;
             }
-            "--root" => {
+            "--root" | "--queue-root" => {
                 root_value = require_option_value(args, index)?.to_string();
                 filtered.push("--root".to_string());
                 filtered.push(root_value.clone());
@@ -203,6 +209,16 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
                         index += 1;
                     }
                 }
+            }
+            "--session" => {
+                session_name = require_option_value(args, index)?.to_string();
+                validate_name("session", &session_name)?;
+                index += 2;
+            }
+            "--workspace" => {
+                workspace_name = require_option_value(args, index)?.to_string();
+                validate_name("workspace", &workspace_name)?;
+                index += 2;
             }
             "--wait" => {
                 wait = true;
@@ -251,15 +267,24 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
         );
         poke_commit_tab(
             &poke_tab,
-            None,
+            resolved_poke_session(&session_name, &workspace_name)?.as_deref(),
             Some(&missing),
             root_arg(&root_value).as_deref(),
         )?;
     } else if !root_value.is_empty() {
         println!(
-            "Run `aw commit poke {} --root {}` to wake the git tab.",
-            poke_tab,
-            shell_quote(&root_value)
+            "Run `{}` to wake the git tab.",
+            poke_command(&poke_tab, &root_value, &session_name, &workspace_name)
+        );
+    } else if !session_name.is_empty() {
+        println!(
+            "Run `{}` to wake the git tab.",
+            poke_command(&poke_tab, &root_value, &session_name, &workspace_name)
+        );
+    } else if !workspace_name.is_empty() {
+        println!(
+            "Run `{}` to wake the git tab.",
+            poke_command(&poke_tab, &root_value, &session_name, &workspace_name)
         );
     } else if poke_tab == "git" {
         println!("Run `aw commit poke` to wake the git tab.");
@@ -302,6 +327,8 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
     let mut root_value = String::new();
     let mut poke = false;
     let mut poke_tab = "git".to_string();
+    let mut session_name = String::new();
+    let mut workspace_name = String::new();
     let mut index = 0;
 
     while index < args.len() {
@@ -311,7 +338,7 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
                 filtered.push(require_option_value(args, index)?.to_string());
                 index += 2;
             }
-            "--root" => {
+            "--root" | "--queue-root" => {
                 root_value = require_option_value(args, index)?.to_string();
                 filtered.push("--root".to_string());
                 filtered.push(root_value.clone());
@@ -327,6 +354,16 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
                     }
                 }
             }
+            "--session" => {
+                session_name = require_option_value(args, index)?.to_string();
+                validate_name("session", &session_name)?;
+                index += 2;
+            }
+            "--workspace" => {
+                workspace_name = require_option_value(args, index)?.to_string();
+                validate_name("workspace", &workspace_name)?;
+                index += 2;
+            }
             other => {
                 filtered.push(other.to_string());
                 index += 1;
@@ -337,7 +374,12 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
     let output = commit_queue::capture("request", &filtered)?;
     print!("{}", output);
     if poke {
-        poke_commit_tab(&poke_tab, None, None, root_arg(&root_value).as_deref())?;
+        poke_commit_tab(
+            &poke_tab,
+            resolved_poke_session(&session_name, &workspace_name)?.as_deref(),
+            None,
+            root_arg(&root_value).as_deref(),
+        )?;
     }
     Ok(())
 }
@@ -345,11 +387,23 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
 fn commit_poke(args: &[String]) -> Result<()> {
     let mut poke_tab = "git".to_string();
     let mut root_value = String::new();
+    let mut session_name = String::new();
+    let mut workspace_name = String::new();
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
-            "--root" => {
+            "--root" | "--queue-root" => {
                 root_value = require_option_value(args, index)?.to_string();
+                index += 2;
+            }
+            "--session" => {
+                session_name = require_option_value(args, index)?.to_string();
+                validate_name("session", &session_name)?;
+                index += 2;
+            }
+            "--workspace" => {
+                workspace_name = require_option_value(args, index)?.to_string();
+                validate_name("workspace", &workspace_name)?;
                 index += 2;
             }
             other if other.starts_with("--") => {
@@ -368,7 +422,12 @@ fn commit_poke(args: &[String]) -> Result<()> {
         }
     }
 
-    poke_commit_tab(&poke_tab, None, None, root_arg(&root_value).as_deref())
+    poke_commit_tab(
+        &poke_tab,
+        resolved_poke_session(&session_name, &workspace_name)?.as_deref(),
+        None,
+        root_arg(&root_value).as_deref(),
+    )
 }
 
 fn poke_commit_tab(
@@ -389,6 +448,53 @@ fn poke_commit_tab(
         println!("Poked {} with {}.", requested_name, message);
     }
     Ok(())
+}
+
+fn resolved_poke_session(
+    explicit_session: &str,
+    explicit_workspace: &str,
+) -> Result<Option<String>> {
+    if !explicit_session.is_empty() {
+        return Ok(Some(explicit_session.to_string()));
+    }
+
+    let Some(config_dir) = find_config_dir() else {
+        return Ok(None);
+    };
+    let workspace = if explicit_workspace.is_empty() {
+        default_workspace_from_config(&config_dir)
+    } else {
+        explicit_workspace.to_string()
+    };
+    if workspace.is_empty() {
+        return Ok(None);
+    }
+    ensure_workspace_tabs_file(&config_dir, &workspace)?;
+    Ok(Some(default_workspace_session_name(
+        &config_dir,
+        &workspace,
+    )))
+}
+
+fn poke_command(tab: &str, root: &str, session: &str, workspace: &str) -> String {
+    let mut command = "aw commit poke".to_string();
+    if tab != "git" {
+        command.push(' ');
+        command.push_str(tab);
+    }
+    if !root.is_empty() {
+        command.push_str(" --queue-root ");
+        command.push_str(&shell_quote(root));
+    }
+    if !workspace.is_empty() {
+        command.push_str(" --workspace ");
+        command.push_str(&shell_quote(workspace));
+    }
+    if !session.is_empty() {
+        command.push_str(" --session ");
+        command.push_str(&shell_quote(session));
+    }
+    command
 }
 
 fn print_commit_status(root: Option<&str>) -> Result<()> {
@@ -438,7 +544,7 @@ fn print_commit_status(root: Option<&str>) -> Result<()> {
         if let Some(next_line) = &next_line {
             println!("[ready]  {next_line}");
             if let Some(root) = root {
-                println!("Command  aw commit poke --root {}", shell_quote(root));
+                println!("Command  aw commit poke --queue-root {}", shell_quote(root));
             } else {
                 println!("Command  aw commit poke");
             }
@@ -448,7 +554,10 @@ fn print_commit_status(root: Option<&str>) -> Result<()> {
     } else {
         println!("[blocked] queue has unsafe overlaps or invalid tickets");
         if let Some(root) = root {
-            println!("Command  aw commit doctor --root {}", shell_quote(root));
+            println!(
+                "Command  aw commit doctor --queue-root {}",
+                shell_quote(root)
+            );
         } else {
             println!("Command  aw commit doctor");
         }
@@ -600,7 +709,7 @@ fn parse_root_only(args: &[String], action: &str) -> Result<Option<String>> {
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
-            "--root" => {
+            "--root" | "--queue-root" => {
                 root_value = Some(require_option_value(args, index)?.to_string());
                 index += 2;
             }
@@ -619,6 +728,25 @@ fn parse_root_only(args: &[String], action: &str) -> Result<Option<String>> {
         }
     }
     Ok(root_value)
+}
+
+fn normalize_queue_root_args(args: &[String]) -> Result<Vec<String>> {
+    let mut normalized = Vec::with_capacity(args.len());
+    let mut index = 0;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--queue-root" => {
+                normalized.push("--root".to_string());
+                normalized.push(require_option_value(args, index)?.to_string());
+                index += 2;
+            }
+            value => {
+                normalized.push(value.to_string());
+                index += 1;
+            }
+        }
+    }
+    Ok(normalized)
 }
 
 fn next_request_line(root_args: &[String]) -> Result<Option<String>> {

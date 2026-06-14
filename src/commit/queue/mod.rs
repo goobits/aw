@@ -118,7 +118,7 @@ fn parse_request_args(args: &[String]) -> Result<RequestInput> {
             "--" => {
                 index += 1;
             }
-            "--root" => {
+            "--root" | "--queue-root" => {
                 input.root = Some(require_value(args, index)?.to_string());
                 index += 2;
             }
@@ -174,7 +174,7 @@ fn parse_list_args(args: &[String]) -> Result<(Option<String>, Option<String>)> 
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
-            "--root" => {
+            "--root" | "--queue-root" => {
                 root = Some(require_value(args, index)?.to_string());
                 index += 2;
             }
@@ -196,7 +196,7 @@ fn parse_check_args(args: &[String]) -> Result<(Option<String>, bool)> {
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
-            "--root" => {
+            "--root" | "--queue-root" => {
                 root = Some(require_value(args, index)?.to_string());
                 index += 2;
             }
@@ -229,7 +229,7 @@ fn parse_move_args(args: &[String], action: &str) -> Result<MoveInput> {
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
-            "--root" => {
+            "--root" | "--queue-root" => {
                 input.root = Some(require_value(args, index)?.to_string());
                 index += 2;
             }
@@ -296,7 +296,7 @@ fn parse_wait_args(args: &[String]) -> Result<(Option<String>, String, Duration,
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
-            "--root" => {
+            "--root" | "--queue-root" => {
                 root = Some(require_value(args, index)?.to_string());
                 index += 2;
             }
@@ -351,9 +351,9 @@ fn require_value(args: &[String], index: usize) -> Result<&str> {
 
 fn commit_action_usage(message: impl Into<String>, action: &str) -> AwError {
     let usage = match action {
-        "wait" => "aw commit wait <id> [--root <queue-root>] [--timeout 10m]",
-        "done" => "aw commit done <id> [--root <queue-root>]",
-        "block" => "aw commit block <id> --reason <reason> [--root <queue-root>]",
+        "wait" => "aw commit wait <id> [--queue-root <path>] [--timeout 10m]",
+        "done" => "aw commit done <id> [--queue-root <path>]",
+        "block" => "aw commit block <id> --reason <reason> [--queue-root <path>]",
         _ => "aw commit <action>",
     };
     AwError::new(format!("{}\n\nusage:\n  {usage}", message.into()), 2)

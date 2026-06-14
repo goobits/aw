@@ -121,10 +121,9 @@ Common workspace commands:
 ```bash
 aw                         # show help
 aw list                    # list workspaces
-aw front                   # open workspace
-aw front -s sketch-api     # open in a named session
-aw front -r /tmp/worktree  # open with a different root
-aw front=tools,ui,scratch  # create or replace workspace tabs
+aw front                   # open workspace in a checkout-scoped session
+aw front -s sketch-api     # open or resume an explicit named session
+aw front -r /tmp/worktree  # open with a different cwd in the checkout's default session
 aw create docs guide api scratch
 aw refresh front
 aw rename front app-ui
@@ -145,6 +144,7 @@ aw front tab move keyboard@1
 aw front tab rename keyboard keys
 aw front tab remove keyboard
 aw front tab refresh
+aw front tab refresh --session sketch-api
 ```
 
 When a profile has exactly one workspace, `aw tab` can infer it:
@@ -158,6 +158,12 @@ aw tab remove keys
 aw tab refresh
 ```
 
+Power-user shortcut:
+
+```bash
+aw front=tools,ui,scratch  # create or replace workspace tabs
+```
+
 `aw refresh <workspace>` converges a live session back to its `*.tabs` file:
 missing tabs are created, duplicate or out-of-profile tabs are removed, and
 configured tabs return to saved order.
@@ -165,6 +171,8 @@ configured tabs return to saved order.
 Session commands:
 
 ```bash
+aw session name
+aw session name front
 aw ps
 aw kill <session>
 ```
@@ -249,7 +257,10 @@ aw commit setup front --tab git --no-agent
 The setup command prepares the tab and can start the agent, but it does not
 consume queue items by itself. The commit-owner agent in the `git` tab becomes
 active when it receives `$x-commit next`; `aw commit poke git` sends that text
-to the tab.
+to the tab in this checkout's resolved default session. Pass
+`--session <name>` to setup, request, or poke only when intentionally using an
+explicit shared/resumed session name. Pass `--workspace <workspace>` to
+request or poke when the commit tab lives in a non-default workspace.
 
 Worker flow:
 
@@ -263,6 +274,7 @@ aw commit status
 aw commit doctor
 aw commit wait <request-id>
 aw commit poke git
+aw commit poke git --workspace front
 ```
 
 After `--poke git`, the `git` tab should run `$x-commit next`, inspect the
@@ -274,7 +286,9 @@ Useful request flags:
 
 | Flag | Use |
 |---|---|
-| `--root <queue-root>` | Share a custom queue path between request/status/owner commands. |
+| `--queue-root <path>` | Share a custom queue path between request/status/owner commands. |
+| `--workspace <workspace>` | Target the default session for a specific workspace when poking. |
+| `--session <name>` | Target an explicit shared/resumed Zellij session. |
 | `--wait --timeout 10m` | Wait for the request just created. |
 | `--must-contain <text>` | Block stale tickets until expected text exists. |
 | `--must-not-contain <text>` | Block stale tickets until unwanted text is gone. |
@@ -374,6 +388,22 @@ scratch
 Workspace names are just file names. `aw frontend` opens
 `config/aw/frontend.tabs`.
 
+Default session names include the profile name, workspace name, and a stable
+fingerprint of the local checkout that owns `config/aw`, so the same workspace
+name can run concurrently from different repos or worktrees even when
+`profile.conf` has the same checked-in `root=` value. For installed profiles
+without a local `config/aw`, AW falls back to the profile root. Use
+`--session <name>` only when you intentionally want to share or resume that
+exact Zellij session.
+
+`aw <workspace> -r <path>` changes the cwd used for the layout, but it does not
+change the implicit session identity. Pass `-s <session>` when you intentionally
+want a second session from the same checkout.
+
+`AW_HOME` changes where AW installs profiles, helpers, completions, and plugins.
+It is useful for install/profile isolation, but live Zellij session isolation is
+controlled by the session name.
+
 ## Quality Of Life
 
 Shell completions are installed for zsh and bash. They complete commands,
@@ -397,15 +427,19 @@ Watcher controls:
 ```bash
 ZELLIJ_AGENT_TAB_WATCHER_DISABLE=1 aw front
 ZELLIJ_AGENT_TAB_WATCHER_POLL_SECONDS=0.5 aw front
-ZELLIJ_SESSION_NAME=front ~/.aw/bin/.zellij-agent-tab-watcher --status
-ZELLIJ_SESSION_NAME=front ~/.aw/bin/.zellij-agent-tab-watcher --restart
-ZELLIJ_SESSION_NAME=front ~/.aw/bin/.zellij-agent-tab-watcher --stop
-ZELLIJ_SESSION_NAME=front ~/.aw/bin/.zellij-agent-tab-watcher --log 40
+ZELLIJ_SESSION_NAME=<resolved-session> ~/.aw/bin/.zellij-agent-tab-watcher --status
+ZELLIJ_SESSION_NAME=<resolved-session> ~/.aw/bin/.zellij-agent-tab-watcher --restart
+ZELLIJ_SESSION_NAME=<resolved-session> ~/.aw/bin/.zellij-agent-tab-watcher --stop
+ZELLIJ_SESSION_NAME=<resolved-session> ~/.aw/bin/.zellij-agent-tab-watcher --log 40
 ```
 
 Session behavior:
 
-- Existing sessions are resumed instead of recreated.
+- Existing sessions with the same resolved session name are resumed instead of
+  recreated.
+- Default session names are checkout-scoped. Old sessions named only after a
+  workspace, such as `front` or `main`, can remain until you remove them with
+  `aw kill <session>`.
 - Running `aw` inside Zellij switches sessions in place.
 - Serialized sessions restore panes as shells so `Ctrl+C` exits foreground
   tools without killing the tab.

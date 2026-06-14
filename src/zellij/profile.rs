@@ -42,14 +42,7 @@ pub fn find_config_dir() -> Option<PathBuf> {
 
 pub fn resolve_profile_name(config_dir: Option<&Path>) -> String {
     if let Some(config_dir) = config_dir {
-        let config_file = config_dir.join("profile.conf");
-        if config_file.is_file() {
-            let fallback = config_dir
-                .file_name()
-                .and_then(|name| name.to_str())
-                .unwrap_or("zellij");
-            return profile_value(&config_file, "name", fallback);
-        }
+        return profile_name_from_config_dir(config_dir);
     }
 
     for default_file in aw_default_profile_candidates() {
@@ -61,6 +54,75 @@ pub fn resolve_profile_name(config_dir: Option<&Path>) -> String {
     }
 
     "zellij".to_string()
+}
+
+pub fn profile_name_from_config_dir(config_dir: &Path) -> String {
+    let config_file = config_dir.join("profile.conf");
+    if config_file.is_file() {
+        let fallback = config_dir
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("zellij");
+        return profile_value(&config_file, "name", fallback);
+    }
+
+    config_dir
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("zellij")
+        .to_string()
+}
+
+pub fn default_session_name(profile_name: &str, workspace: &str, root: &str) -> String {
+    format!(
+        "{}-{}-{:016x}",
+        profile_name,
+        workspace,
+        stable_root_hash(root)
+    )
+}
+
+pub fn default_session_name_from_profile_dir(profile_dir: &Path, workspace: &str) -> String {
+    let profile_name = profile_name_from_config_dir(profile_dir);
+    let identity_root = profile_session_identity_root(profile_dir);
+    default_session_name(&profile_name, workspace, &identity_root)
+}
+
+fn profile_session_identity_root(profile_dir: &Path) -> String {
+    if let Some(local_root) = local_config_owner_root(profile_dir) {
+        return path_string(&local_root);
+    }
+
+    profile_value(
+        &profile_dir.join("profile.conf"),
+        "root",
+        &env::current_dir()
+            .ok()
+            .map(|path| path_string(&path))
+            .unwrap_or_else(|| "/workspace".to_string()),
+    )
+}
+
+fn local_config_owner_root(profile_dir: &Path) -> Option<PathBuf> {
+    let config_dir = profile_dir.file_name().and_then(|name| name.to_str())?;
+    let config_parent = profile_dir
+        .parent()
+        .and_then(|parent| parent.file_name())
+        .and_then(|name| name.to_str())?;
+    if config_dir != "aw" || config_parent != "config" {
+        return None;
+    }
+    let root = profile_dir.parent()?.parent()?;
+    Some(root.canonicalize().unwrap_or_else(|_| root.to_path_buf()))
+}
+
+fn stable_root_hash(root: &str) -> u64 {
+    let mut hash = 0xcbf29ce484222325_u64;
+    for byte in root.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    hash
 }
 
 pub fn resolve_config_arg(args: &[String]) -> Result<PathBuf> {

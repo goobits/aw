@@ -10,6 +10,24 @@ fn install_test_aw(name: &str) -> TestHome {
     fake_zellij::installed_home(name)
 }
 
+fn expected_session(profile: &str, workspace: &str, root: impl std::fmt::Display) -> String {
+    let root = root.to_string();
+    let mut hash = 0xcbf29ce484222325_u64;
+    for byte in root.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("{profile}-{workspace}-{hash:016x}")
+}
+
+fn assert_order(path: impl AsRef<std::path::Path>, session: &str, tabs: &[&str]) {
+    let expected = std::iter::once(session)
+        .chain(tabs.iter().copied())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert_eq!(read(path).trim_end(), expected);
+}
+
 #[test]
 fn bare_aw_shows_help_instead_of_launching_default_workspace() {
     let home = install_test_aw("workspace-help");
@@ -46,6 +64,80 @@ fn run_in_project(
 }
 
 #[test]
+fn default_sessions_are_scoped_to_local_config_owner_root() {
+    let home = install_test_aw("workspace-session-scope");
+    let tabs = home.root.join("tabs.tsv");
+    temp::write(&tabs, "");
+    temp::write(tabs.with_extension("tsv.panes"), "");
+
+    for project_name in ["checkout-a", "checkout-b"] {
+        let project = home.root.join(project_name);
+        let profile = project.join("config/aw");
+        temp::write(
+            profile.join("profile.conf"),
+            "name=shared\nroot=/same/checked-in/root\ndefault_workspace=front\ndefault_workspaces=front\n",
+        );
+        temp::write(profile.join("front.tabs"), "app\nscratch\n");
+
+        let output = home
+            .aw_command()
+            .arg("front")
+            .current_dir(&project)
+            .env("FAKE_ZELLIJ_TABS", &tabs)
+            .env(
+                "FAKE_ZELLIJ_ORDER_ARGS",
+                home.root.join(format!("{project_name}-order.txt")),
+            )
+            .env_remove("ZELLIJ")
+            .env_remove("ZELLIJ_SESSION_NAME")
+            .output()
+            .expect("launch scoped workspace");
+        assert_success("launch scoped workspace", &output);
+
+        assert_order(
+            home.root.join(format!("{project_name}-order.txt")),
+            &expected_session("shared", "front", project.display()),
+            &["app", "scratch"],
+        );
+
+        let session_name = home
+            .aw_command()
+            .args(["session", "name"])
+            .current_dir(&project)
+            .output()
+            .expect("default session name");
+        assert_success("default session name", &session_name);
+        assert_eq!(
+            stdout(&session_name),
+            expected_session("shared", "front", project.display())
+        );
+
+        let named_workspace = home
+            .aw_command()
+            .args(["session", "name", "front"])
+            .current_dir(&project)
+            .output()
+            .expect("workspace session name");
+        assert_success("workspace session name", &named_workspace);
+        assert_eq!(
+            stdout(&named_workspace),
+            expected_session("shared", "front", project.display())
+        );
+    }
+
+    assert_ne!(
+        read(home.root.join("checkout-a-order.txt"))
+            .lines()
+            .next()
+            .unwrap(),
+        read(home.root.join("checkout-b-order.txt"))
+            .lines()
+            .next()
+            .unwrap(),
+    );
+}
+
+#[test]
 fn workspace_assignment_rename_remove_and_validation_are_rust_contracts() {
     let home = install_test_aw("workspace-create");
     let project = home.root.join("my-site");
@@ -71,9 +163,10 @@ fn workspace_assignment_rename_remove_and_validation_are_rust_contracts() {
         "app\nserver\ninfra\nscratch\n"
     );
     assert!(home.home.join(".aw/profiles/my-site/main.tabs").is_file());
-    assert_eq!(
-        read(home.root.join("main-order.txt")).trim_end(),
-        "main\napp\nserver\ninfra\nscratch"
+    assert_order(
+        home.root.join("main-order.txt"),
+        &expected_session("my-site", "main", project.display()),
+        &["app", "server", "infra", "scratch"],
     );
 
     for (workspace, tabs) in [("frontend", "app,ui,tools"), ("backend", "infra,api,db")] {
@@ -489,7 +582,10 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
         .args(["refresh", "frontend"])
         .current_dir(&strict_project)
         .env("FAKE_ZELLIJ_TABS", &strict_tabs)
-        .env("FAKE_ZELLIJ_SESSIONS", "frontend")
+        .env(
+            "FAKE_ZELLIJ_SESSIONS",
+            expected_session("strict-site", "frontend", strict_project.display()),
+        )
         .env(
             "FAKE_ZELLIJ_ORDER_ARGS",
             home.root.join("strict-refresh-order.txt"),
@@ -539,9 +635,33 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
         .expect("frontend launch");
     assert_success("frontend launch", &output);
     assert!(stdout(&output).is_empty());
-    assert_eq!(
-        read(home.root.join("default-order.txt")).trim_end(),
-        "frontend\napp\nui\nscratch"
+    assert_order(
+        home.root.join("default-order.txt"),
+        &expected_session("my-site", "frontend", project.display()),
+        &["app", "ui", "scratch"],
+    );
+
+    let alternate_root = home.root.join("alternate-root");
+    std::fs::create_dir_all(&alternate_root).unwrap();
+    let output = home
+        .aw_command()
+        .args(["extra", "-r"])
+        .arg(&alternate_root)
+        .current_dir(&project)
+        .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env(
+            "FAKE_ZELLIJ_ORDER_ARGS",
+            home.root.join("extra-root-override-order.txt"),
+        )
+        .env_remove("ZELLIJ")
+        .env_remove("ZELLIJ_SESSION_NAME")
+        .output()
+        .expect("extra root override launch");
+    assert_success("extra root override launch", &output);
+    assert_order(
+        home.root.join("extra-root-override-order.txt"),
+        &expected_session("my-site", "extra", project.display()),
+        &["notes", "scratch"],
     );
 
     let output = home
@@ -640,6 +760,24 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
         assert_success("tab edit", &output);
         assert_eq!(read(profile.join("front.tabs")), expected_tabs);
     }
+    let output = home
+        .aw_command()
+        .args(["front", "tab", "refresh", "--session", "front-explicit"])
+        .current_dir(&project)
+        .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env(
+            "FAKE_ZELLIJ_ORDER_ARGS",
+            home.root.join("front-explicit-refresh-order.txt"),
+        )
+        .output()
+        .expect("explicit session tab refresh");
+    assert_success("explicit session tab refresh", &output);
+    assert_order(
+        home.root.join("front-explicit-refresh-order.txt"),
+        "front-explicit",
+        &["tools", "search", "components", "skills", "scratch"],
+    );
+
     let output = home
         .aw_command()
         .args(["refresh", "front"])

@@ -70,6 +70,11 @@ _aw_completion() {
       return
     fi
 
+    if [[ "$cur" == --* ]]; then
+      COMPREPLY=( $(compgen -W "--session" -- "$cur") )
+      return
+    fi
+
     case "$action" in
       list|refresh)
         if [[ -z "$workspace" && "$COMP_CWORD" -eq "$first_arg_index" && -z "$(_aw_single_workspace)" ]]; then
@@ -107,20 +112,24 @@ _aw_completion() {
             fi
             ;;
           request)
-            COMPREPLY=( $(compgen -W "--check --verify --root --summary --owner --must-contain --must-not-contain --poke --wait --timeout --poll" -- "$cur") )
+            COMPREPLY=( $(compgen -W "--check --verify --queue-root --root --summary --owner --must-contain --must-not-contain --poke --workspace --session --wait --timeout --poll" -- "$cur") )
             _aw_file_replies
             ;;
           status|doctor)
-            COMPREPLY=( $(compgen -W "--root" -- "$cur") )
+            COMPREPLY=( $(compgen -W "--queue-root --root" -- "$cur") )
             ;;
           wait)
-            COMPREPLY=( $(compgen -W "--root --timeout --poll" -- "$cur") )
+            COMPREPLY=( $(compgen -W "--queue-root --root --timeout --poll" -- "$cur") )
             ;;
           poke)
-            COMPREPLY=( $(compgen -W "git --root" -- "$cur") )
+            COMPREPLY=( $(compgen -W "git --queue-root --root --workspace --session" -- "$cur") )
             ;;
         esac
       fi
+      ;;
+    session)
+      [[ "$COMP_CWORD" -eq 2 ]] && COMPREPLY=( $(compgen -W "name" -- "$cur") )
+      [[ "$COMP_CWORD" -eq 3 && "${COMP_WORDS[2]:-}" == "name" ]] && COMPREPLY=( $(compgen -W "$(_aw_workspaces)" -- "$cur") )
       ;;
     repo)
       if [[ "$COMP_CWORD" -eq 2 ]]; then
@@ -162,7 +171,7 @@ _aw_completion() {
       if [[ "${COMP_WORDS[2]:-}" == "tab" ]]; then
         _aw_complete_tab_command "${COMP_WORDS[1]}" "${COMP_WORDS[3]:-}" 4
       elif [[ "$COMP_CWORD" -eq 1 ]]; then
-        COMPREPLY=( $(compgen -W "help install setup doctor paths repo list create refresh rename remove tab commit owner ps kill $(_aw_workspaces)" -- "$cur") )
+        COMPREPLY=( $(compgen -W "help install setup doctor paths repo list create refresh rename remove tab session commit owner ps kill $(_aw_workspaces)" -- "$cur") )
       elif [[ "$COMP_CWORD" -eq 2 ]]; then
         COMPREPLY=( $(compgen -W "tab -s --session -r --root" -- "$cur") )
       elif [[ "$COMP_CWORD" -gt 1 ]]; then

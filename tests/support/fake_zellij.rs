@@ -132,6 +132,9 @@ fi
 
 state="${FAKE_ZELLIJ_TABS:?}"
 panes="${state}.panes"
+if [[ -n "${FAKE_ZELLIJ_SESSION_NAMES:-}" ]]; then
+  printf '%s\n' "${ZELLIJ_SESSION_NAME:-}" >> "$FAKE_ZELLIJ_SESSION_NAMES"
+fi
 
 shift
 case "${1:-}" in
