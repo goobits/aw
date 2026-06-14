@@ -41,12 +41,6 @@ struct PendingClick {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-struct DragState {
-    name: String,
-    index: usize,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RenameState {
     pub old_name: String,
     pub input: String,
@@ -66,10 +60,9 @@ pub struct TabBarState {
     tabs: Vec<TabItem>,
     spans: Vec<TabSpan>,
     pending_click: Option<PendingClick>,
-    // Tab under the most recent press; survives the double-click timer so a
-    // press-then-release on a different tab reorders even without motion events.
+    // Tab under the most recent press; survives motion/timer so a drag (or a
+    // press-then-release on a different tab) reorders the originally pressed tab.
     drag_origin: Option<PendingClick>,
-    drag: Option<DragState>,
     rename: Option<RenameState>,
     status: Option<String>,
 }
@@ -168,38 +161,25 @@ impl TabBarState {
         })
     }
 
-    pub fn hold(&mut self, col: usize) {
-        if let Some(span) = self.span_at(col).cloned() {
-            self.drag = Some(DragState {
-                name: span.name,
-                index: span.index,
-            });
-            self.pending_click = None;
-        }
+    pub fn hold(&mut self, _col: usize) {
+        // A drag is underway. Cancel the pending click so the release reorders
+        // instead of focusing/renaming. zellij sends a Hold per motion step;
+        // the tab being moved is the one captured on press (drag_origin), so we
+        // deliberately ignore the column here and don't track the hover tab.
+        self.pending_click = None;
     }
 
     pub fn release(&mut self, col: usize) -> Option<TabBarCommand> {
-        // Hold-based drag (used when the terminal delivers motion events).
-        if let Some(drag) = self.drag.take() {
-            self.drag_origin = None;
-            let target = self.target_index_for_col(col);
-            if target == drag.index {
-                return None;
-            }
-            return Some(TabBarCommand::Move {
-                name: drag.name,
-                index: target,
-            });
-        }
-        // Position-based drag: press and release on different tabs => reorder.
-        // Works with basic mouse tracking, where no Hold/motion events arrive.
+        // Move the tab that was pressed (drag_origin) to the tab under the
+        // release column. Works whether the drag arrived as Hold/Release motion
+        // events or as a plain press-then-release on another tab.
         let origin = self.drag_origin.take()?;
-        let span = self.span_at(col).cloned()?;
-        if span.tab_id == origin.tab_id {
-            return None; // same tab: leave it to the click / double-click path
+        self.span_at(col)?; // ignore releases that aren't over a tab
+        let target = self.target_index_for_col(col);
+        if target == origin.index {
+            return None; // released on its own slot: a click, not a move
         }
         self.pending_click = None; // a drag, not a (double-)click
-        let target = self.target_index_for_col(col);
         Some(TabBarCommand::Move {
             name: origin.name,
             index: target,
@@ -376,7 +356,9 @@ mod tests {
     }
 
     #[test]
-    fn drag_release_requests_aw_move_target() {
+    fn drag_moves_pressed_tab_not_hover_tab() {
+        // zellij delivers a Hold per motion step; the move must target the
+        // pressed tab (drag_origin), not whichever tab the cursor ended over.
         let mut state = TabBarState::default();
         state.replace_tabs(vec![
             item(1, 0, "app"),
@@ -385,10 +367,12 @@ mod tests {
         ]);
         state.render(80);
 
-        state.hold(2);
+        state.click(2); // press on "app"
+        state.hold(8); // motion over "server"
+        state.hold(15); // motion over "git"
 
         assert_eq!(
-            state.release(20),
+            state.release(15), // release over "git"
             Some(TabBarCommand::Move {
                 name: "app".to_string(),
                 index: 2,
