@@ -120,7 +120,7 @@ Common workspace commands:
 
 ```bash
 aw                         # show help
-aw list                    # list workspaces
+aw list                    # list workspaces and saved tabs
 aw main                    # open workspace in a checkout-scoped session
 aw main -s shared-dev      # open or resume an explicit named session
 aw main -r /tmp/worktree   # open with a different cwd in the checkout's default session

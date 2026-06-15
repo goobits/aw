@@ -118,8 +118,11 @@ pub(crate) fn upsert_workspace_tab_line(tabs_file: &Path, spec: &str) -> Result<
 
     let line = existing_line.unwrap_or_else(|| indexed.name.clone());
     match indexed.index {
-        Some(index) if index < next_lines.len() => next_lines.insert(index, line),
-        _ => next_lines.push(line),
+        Some(index) if index <= next_lines.len() => next_lines.insert(index, line),
+        Some(index) => {
+            return Err(index_out_of_range(index, next_lines.len()));
+        }
+        None => next_lines.push(line),
     }
 
     fs::write(tabs_file, format!("{}\n", next_lines.join("\n")))?;
@@ -173,10 +176,10 @@ pub(crate) fn rename_workspace_tab_line_from_spec(
                 1,
             )
         })?;
-        if index < remaining_lines.len() {
+        if index <= remaining_lines.len() {
             remaining_lines.insert(index, line);
         } else {
-            remaining_lines.push(line);
+            return Err(index_out_of_range(index, remaining_lines.len()));
         }
         next_lines = remaining_lines;
     }
@@ -229,4 +232,11 @@ fn renamed_workspace_tab_lines(
         ));
     }
     Ok(next_lines)
+}
+
+fn index_out_of_range(index: usize, max: usize) -> AwError {
+    AwError::new(
+        format!("aw: tab index {index} is past the end; use 0 through {max}"),
+        2,
+    )
 }

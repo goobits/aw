@@ -260,6 +260,12 @@ case "${1:-}" in
     name="${3:-}"
     awk -F '\t' -v target="$target" -v name="$name" 'BEGIN { OFS = FS } { if ($1 == target) $4 = name; print }' "$state" | write_state
     ;;
+  rename-session)
+    name="${2:-}"
+    if [[ -n "${FAKE_ZELLIJ_RENAMED_SESSION:-}" ]]; then
+      printf '%s\t%s\n' "${ZELLIJ_SESSION_NAME:-}" "$name" > "$FAKE_ZELLIJ_RENAMED_SESSION"
+    fi
+    ;;
   save-session)
     touch "${state}.saved"
     ;;

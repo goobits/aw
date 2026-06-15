@@ -191,19 +191,54 @@ fn workspace_assignment_rename_remove_and_validation_are_rust_contracts() {
         "infra\napi\ndb\n"
     );
 
-    let output = run_in_project(&home, &project, &["rename", "backend", "services"]);
+    let renamed_session = home.root.join("renamed-session.txt");
+    let live_tabs = home.root.join("backend-live-tabs.tsv");
+    temp::write(&live_tabs, "");
+    temp::write(live_tabs.with_extension("tsv.panes"), "");
+    let output = home
+        .aw_command()
+        .args(["rename", "backend", "services"])
+        .current_dir(&project)
+        .env("FAKE_ZELLIJ_TABS", &live_tabs)
+        .env(
+            "FAKE_ZELLIJ_SESSIONS",
+            expected_session("my-site", "backend", project.display()),
+        )
+        .env("FAKE_ZELLIJ_RENAMED_SESSION", &renamed_session)
+        .env(
+            "FAKE_ZELLIJ_ORDER_ARGS",
+            home.root.join("services-order.txt"),
+        )
+        .output()
+        .expect("rename backend");
     assert_success("rename backend", &output);
     assert!(!project.join("config/aw/backend.tabs").exists());
     assert_eq!(
         read(project.join("config/aw/services.tabs")),
         "infra\napi\ndb\n"
     );
+    assert_eq!(
+        read(&renamed_session).trim_end(),
+        format!(
+            "{}\t{}",
+            expected_session("my-site", "backend", project.display()),
+            expected_session("my-site", "services", project.display())
+        )
+    );
+    assert_order(
+        home.root.join("services-order.txt"),
+        &expected_session("my-site", "services", project.display()),
+        &["infra", "api", "db"],
+    );
     assert!(read(project.join("config/aw/profile.conf"))
         .contains("default_workspaces=main frontend services"));
 
     let output = run_in_project(&home, &project, &["list"]);
     assert_success("list", &output);
-    assert_eq!(stdout(&output), "frontend\nmain\nservices");
+    assert_eq!(
+        stdout(&output),
+        "frontend\n  app\n  ui\n  tools\nmain\n  app\n  server\n  infra\n  scratch\nservices\n  infra\n  api\n  db"
+    );
 
     let output = run_in_project(&home, &project, &["rename", "services", "frontend"]);
     assert_failure("rename over existing", &output);
@@ -227,7 +262,7 @@ fn workspace_assignment_rename_remove_and_validation_are_rust_contracts() {
     );
     assert_eq!(
         stdout(&run_in_project(&home, &project, &["list"])),
-        "services"
+        "services\n  infra\n  api\n  db"
     );
     assert_failure(
         "remove missing",
@@ -342,7 +377,8 @@ fn tab_commands_infer_the_only_workspace() {
         .env("FAKE_ZELLIJ_TABS", &tabs)
         .output()
         .expect("legacy tab list");
-    assert_success("legacy tab list", &output);
+    assert_failure("legacy tab list", &output);
+    assert!(stderr(&output).contains("aw tab list [--session <name>]"));
 
     for (args, expected_tabs, order_file) in [
         (
@@ -435,6 +471,15 @@ fn malformed_tab_and_launch_commands_report_scoped_usage() {
         "tools\nkeyboard\nscratch\n"
     );
 
+    let out_of_range_index =
+        run_in_project(&home, &project, &["front", "tab", "move", "keyboard@3"]);
+    assert_failure("out of range tab index", &out_of_range_index);
+    assert!(stderr(&out_of_range_index).contains("tab index 3 is past the end"));
+    assert_eq!(
+        read(profile.join("front.tabs")),
+        "tools\nkeyboard\nscratch\n"
+    );
+
     let bad_rename_index = run_in_project(
         &home,
         &project,
@@ -446,6 +491,27 @@ fn malformed_tab_and_launch_commands_report_scoped_usage() {
         read(profile.join("front.tabs")),
         "tools\nkeyboard\nscratch\n"
     );
+
+    let out_of_range_rename_index = run_in_project(
+        &home,
+        &project,
+        &["front", "tab", "rename", "keyboard", "keys@3"],
+    );
+    assert_failure("out of range rename index", &out_of_range_rename_index);
+    assert!(stderr(&out_of_range_rename_index).contains("tab index 3 is past the end"));
+    assert_eq!(
+        read(profile.join("front.tabs")),
+        "tools\nkeyboard\nscratch\n"
+    );
+
+    let legacy_tab_add = run_in_project(&home, &project, &["tab", "add", "front", "search"]);
+    assert_failure("legacy tab add", &legacy_tab_add);
+    assert!(stderr(&legacy_tab_add).contains("aw tab add <tab[@index]>"));
+
+    let bad_refresh = run_in_project(&home, &project, &["refresh"]);
+    assert_failure("bad refresh", &bad_refresh);
+    assert!(stderr(&bad_refresh).contains("usage:\n  aw refresh <workspace>"));
+    assert!(!stderr(&bad_refresh).contains("commit queue:"));
 
     let huge_index = "keyboard@999999999999999999999999999999999999999";
     let bad_huge_index = run_in_project(&home, &project, &["front", "tab", "move", huge_index]);
@@ -624,7 +690,7 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
                 .output()
                 .unwrap()
         ),
-        "backend\nextra\nfrontend"
+        "backend\n  api\n  database\n  scratch\nextra\n  notes\n  scratch\nfrontend\n  app\n  ui\n  scratch"
     );
     let output = home
         .aw_command()

@@ -77,9 +77,6 @@ _aw_completion() {
 
     case "$action" in
       list|refresh)
-        if [[ -z "$workspace" && "$COMP_CWORD" -eq "$first_arg_index" && -z "$(_aw_single_workspace)" ]]; then
-          COMPREPLY=( $(compgen -W "$(_aw_workspaces)" -- "$cur") )
-        fi
         ;;
       add|move|remove|rename)
         if [[ -n "$workspace" ]]; then
@@ -89,10 +86,6 @@ _aw_completion() {
         single_workspace="$(_aw_single_workspace)"
         if [[ "$COMP_CWORD" -eq "$first_arg_index" && -n "$single_workspace" ]]; then
           COMPREPLY=( $(compgen -W "$(_aw_tabs "$single_workspace")" -- "$cur") )
-        elif [[ "$COMP_CWORD" -eq "$first_arg_index" ]]; then
-          COMPREPLY=( $(compgen -W "$(_aw_workspaces)" -- "$cur") )
-        elif [[ "$COMP_CWORD" -eq $((first_arg_index + 1)) && -z "$single_workspace" ]]; then
-          COMPREPLY=( $(compgen -W "$(_aw_tabs "${COMP_WORDS[$first_arg_index]}")" -- "$cur") )
         fi
         ;;
     esac

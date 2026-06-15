@@ -78,7 +78,6 @@ _aw_complete_tab_command() {
 
   case "$action" in
     list|refresh)
-      [[ -z "$workspace" && "$CURRENT" -eq "$first_arg_index" && -z "$(_aw_single_workspace)" ]] && _aw_workspaces
       ;;
     add|move|remove|rename)
       if [[ -n "$workspace" ]]; then
@@ -88,10 +87,6 @@ _aw_complete_tab_command() {
       single_workspace="$(_aw_single_workspace)"
       if [[ "$CURRENT" -eq "$first_arg_index" && -n "$single_workspace" ]]; then
         _aw_tabs "$single_workspace"
-      elif [[ "$CURRENT" -eq "$first_arg_index" ]]; then
-        _aw_workspaces
-      elif [[ "$CURRENT" -eq $((first_arg_index + 1)) && -z "$single_workspace" ]]; then
-        _aw_tabs "${words[$first_arg_index]}"
       fi
       ;;
   esac

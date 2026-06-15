@@ -63,6 +63,35 @@ pub fn default_workspace_session_name(config_dir: &Path, workspace: &str) -> Str
     default_session_name_from_profile_dir(config_dir, workspace)
 }
 
+pub fn rename_live_workspace_session(old_session: &str, new_session: &str) -> Result<()> {
+    validate_name("session", old_session)?;
+    validate_name("session", new_session)?;
+    if old_session == new_session || !session_exists(old_session)? {
+        return Ok(());
+    }
+    zellij_action(
+        Some(old_session),
+        &["action", "rename-session", new_session],
+    )
+}
+
+fn session_exists(session: &str) -> Result<bool> {
+    let output = match Command::new("zellij")
+        .args(["list-sessions"])
+        .stderr(Stdio::null())
+        .output()
+    {
+        Ok(output) => output,
+        Err(_) => return Ok(false),
+    };
+    if !output.status.success() {
+        return Ok(false);
+    }
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .any(|line| line.split_whitespace().next() == Some(session)))
+}
+
 fn workspace_root(config_dir: &Path) -> String {
     profile_value(
         &config_dir.join("profile.conf"),

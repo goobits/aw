@@ -28,8 +28,8 @@ use crate::tabs::{
 use crate::workspace_tasks;
 use crate::zellij::{
     count_tabs_files, default_workspace_session_name, ensure_workspace_tabs_file,
-    list_workspace_tabs, rename_live_workspace_tab, run_helper, sync_workspace_session,
-    zellij_passthrough,
+    list_workspace_tabs, rename_live_workspace_session, rename_live_workspace_tab, run_helper,
+    sync_workspace_session, zellij_passthrough,
 };
 
 pub const USAGE: &str = r#"aw: Zero-friction Zellij workspaces
@@ -39,7 +39,7 @@ usage:
   aw <workspace> [-s <session>] [-r <root>]
 
 workspaces:
-  aw list [--config <profile-dir>]
+  aw list [--config <profile-dir>]                  list workspaces and saved tabs
   aw create <workspace> <tabs...>
   aw refresh <workspace>
   aw rename <workspace> <new-workspace>
@@ -124,13 +124,10 @@ pub fn run(args: Vec<String>) -> Result<i32> {
         }
         "refresh" => {
             if args.len() != 2 {
-                eprintln!("aw: refresh requires exactly one workspace name");
-                eprintln!("example: aw refresh front");
-                return Err(AwError {
-                    message: USAGE.trim_end().to_string(),
-                    code: 2,
-                    show_usage: false,
-                });
+                return Err(scoped_usage(
+                    "aw: refresh requires exactly one workspace name",
+                    "aw refresh <workspace>",
+                ));
             }
             run_workspace_tab_command(
                 &args[1],
@@ -420,6 +417,13 @@ fn run_list(args: &[String]) -> Result<i32> {
     };
     for workspace in list_workspaces(&config_dir)? {
         println!("{}", workspace);
+        let tabs_file = config_dir.join(format!("{workspace}.tabs"));
+        for line in crate::tabs::read_tab_lines(&tabs_file)? {
+            let tab = crate::tabs::tab_name_from_line(&line);
+            if !tab.is_empty() {
+                println!("  {tab}");
+            }
+        }
     }
     Ok(0)
 }
@@ -542,17 +546,8 @@ fn resolve_tab_command(
             }
             match positional {
                 [] => Ok((infer_single_tab_workspace(action)?, parsed)),
-                [workspace] => Ok((
-                    workspace.clone(),
-                    TabCommandArgs {
-                        args: Vec::new(),
-                        session: parsed.session,
-                    },
-                )),
                 _ => Err(scoped_usage(
-                    format!(
-                        "aw: tab {action} accepts either no workspace shorthand or exactly one workspace"
-                    ),
+                    format!("aw: tab {action} is only shorthand when exactly one workspace exists"),
                     tab_action_usage(None, action),
                 )),
             }
@@ -569,15 +564,8 @@ fn resolve_tab_command(
             }
             match positional {
                 [_tab] => Ok((infer_single_tab_workspace(action)?, parsed)),
-                [workspace, tab] => Ok((
-                    workspace.clone(),
-                    TabCommandArgs {
-                        args: vec![tab.clone()],
-                        session: parsed.session,
-                    },
-                )),
                 _ => Err(scoped_usage(
-                    format!("aw: tab {action} requires a tab shorthand or workspace and tab"),
+                    format!("aw: tab {action} is only shorthand when exactly one workspace exists"),
                     tab_action_usage(None, action),
                 )),
             }
@@ -594,15 +582,8 @@ fn resolve_tab_command(
             }
             match positional {
                 [_old_tab, _new_tab] => Ok((infer_single_tab_workspace(action)?, parsed)),
-                [workspace, old_tab, new_tab] => Ok((
-                    workspace.clone(),
-                    TabCommandArgs {
-                        args: vec![old_tab.clone(), new_tab.clone()],
-                        session: parsed.session,
-                    },
-                )),
                 _ => Err(scoped_usage(
-                    "aw: tab rename requires old and new tab shorthand or workspace, old tab, and new tab",
+                    "aw: tab rename is only shorthand when exactly one workspace exists",
                     tab_action_usage(None, action),
                 )),
             }
@@ -804,8 +785,8 @@ fn run_workspace_tab_command(
             sync_workspace_session(&config_dir, workspace, Some(&session_name))?;
             match indexed.index {
                 Some(index) => println!(
-                    "Renamed tab {} to {} and moved it to {}@{}.",
-                    args[0], indexed.name, workspace, index
+                    "Renamed tab {} to {} and moved it to index {} in {}.",
+                    args[0], indexed.name, index, workspace
                 ),
                 None => println!(
                     "Renamed tab {} to {} in {}.",
@@ -911,6 +892,8 @@ fn rename_local_workspace(old_workspace: &str, new_workspace: &str) -> Result<i3
             1,
         ));
     }
+    let old_session = default_workspace_session_name(&config_dir, old_workspace);
+    let new_session = default_workspace_session_name(&config_dir, new_workspace);
     fs::rename(old_tabs, new_tabs)?;
     replace_profile_workspace(
         &config_dir.join("profile.conf"),
@@ -918,6 +901,8 @@ fn rename_local_workspace(old_workspace: &str, new_workspace: &str) -> Result<i3
         new_workspace,
     )?;
     install_profile(&config_dir, true)?;
+    rename_live_workspace_session(&old_session, &new_session)?;
+    sync_workspace_session(&config_dir, new_workspace, Some(&new_session))?;
     println!("Renamed workspace {} to {}.", old_workspace, new_workspace);
     Ok(0)
 }
