@@ -134,9 +134,10 @@ impl ZellijPlugin for PluginState {
     }
 
     fn render(&mut self, _rows: usize, cols: usize) {
-        // Render tabs as theme-styled ribbons (built-in tab-bar look): the
-        // active tab is highlighted via .selected(); a tab being renamed is
-        // tinted. Widths stay literal so click spans line up (see state::render).
+        // Render tabs as zellij ribbons (built-in tab-bar look): theme ribbon
+        // colors + powerline separators, active tab via .selected(), a renaming
+        // tab tinted. Each ribbon renders as `<sep> label <sep>`, so its width is
+        // label + state::RIBBON_DECORATION_WIDTH; click spans account for that.
         let tabs = self.tabs.render(cols);
         let mut line = String::new();
         for tab in &tabs {
@@ -147,7 +148,7 @@ impl ZellijPlugin for PluginState {
             if tab.renaming {
                 text = text.color_range(2, ..);
             }
-            line.push_str(&serialize_text(&text));
+            line.push_str(&serialize_ribbon(&text));
         }
         if let Some(status) = self.tabs.status() {
             line.push_str(&serialize_text(&Text::new(status)));
@@ -180,9 +181,9 @@ impl PluginState {
                     return;
                 };
                 self.run_aw(vec![
+                    workspace,
                     "tab".to_string(),
                     "move".to_string(),
-                    workspace,
                     format!("{}@{}", name, index),
                 ]);
             }
@@ -192,9 +193,9 @@ impl PluginState {
                     return;
                 };
                 self.run_aw(vec![
+                    workspace,
                     "tab".to_string(),
                     "rename".to_string(),
-                    workspace,
                     old_name,
                     new_name,
                 ]);

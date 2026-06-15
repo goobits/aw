@@ -1,13 +1,13 @@
 # aw
 
-Zero-friction Zellij workspaces for repos with many tabs, agents, and shared
-Git coordination.
+Zellij workspace CLI for repos with many tabs, agents, and shared Git
+coordination.
 
 `aw` keeps project workspaces in plain text, installs portable agent adapters,
 opens repeatable Zellij sessions, and provides queue/owner tools for shared
 checkouts.
 
-## What It Gives You
+## Key Features
 
 | Area | What `aw` handles |
 |---|---|
@@ -17,9 +17,23 @@ checkouts.
 | Agent work | Coordinate worker requests through a commit-owner queue. |
 | Maintenance | Doctor checks, generated cleanup, Git timing probes, and worktree helpers. |
 
-The goal is simple: clone a repo, run the setup once, then type `aw`.
+## Quick Start
 
-## Install
+```bash
+aw install
+aw main=app,server,infra,scratch
+aw main
+```
+
+In a repo that already vendors AW at `infra/aw`, use the package script when
+available:
+
+```bash
+pnpm run aw:install
+aw front
+```
+
+## Install Globally
 
 Install the shared tooling once from this repository:
 
@@ -41,13 +55,13 @@ supported platforms. Set `ZELLIJ_INSTALL_BINARY=0` to skip that step.
 AW-owned state is installed under `~/.aw` by default. Set `AW_HOME` to use a
 custom home.
 
-Refresh a profile directly when needed:
+Refresh an installed profile directly when needed:
 
 ```bash
 aw setup --config config/aw
 ```
 
-## Add aw To A Repo
+## Add To A Repo
 
 Consuming repos pin this project as a submodule at `infra/aw`.
 
@@ -84,7 +98,7 @@ commands, ports, and policies belong in `.agents.local/project.md`.
 Codex discovers repo skills from `.agents/skills`; `.claude/skills` is only the
 Claude compatibility adapter.
 
-## Update aw
+## Update
 
 Use the consuming repo's update script when available:
 
@@ -105,7 +119,7 @@ git add infra/aw
 git commit -m "chore: update aw"
 ```
 
-## Daily Workspace Commands
+## Daily Use
 
 Create the first workspace. If `config/aw/` is missing, `aw` creates it.
 
@@ -130,7 +144,7 @@ aw remove work
 
 When `config/aw/profile.conf` exists, `aw` auto-detects the project profile.
 
-## Tabs And Sessions
+## Tabs
 
 Manage saved and live tabs with the `tab` namespace:
 
@@ -241,7 +255,7 @@ main=http://localhost:3240
 dev=http://dev.localhost:3240 http://dev.localtest.me:3240
 ```
 
-## Agent Commit Queue
+## Commit Queue
 
 Use the commit queue when multiple workers share one checkout. Workers request
 scoped work; a commit-owner tab performs Git and package mutations.
@@ -296,7 +310,7 @@ Useful request flags:
 Avoid fingerprint flags for broad directory tickets that will likely receive
 follow-up edits in the same scope.
 
-## Owner-Only Commands
+## Owner Commands
 
 `aw owner git` and `aw owner pkg` are commit-owner internals. Worker tabs should
 not run final commits, staging, repair, or package mutations directly.
@@ -335,7 +349,7 @@ Only clear stale queue or `.git/index.lock` files after checking that no active
 Git, package-manager, or queue owner process is using the checkout. Rerun
 queue/status/health checks before committing.
 
-## Profile Files
+## Configuration
 
 Profiles are inert project files:
 
@@ -403,7 +417,7 @@ want a second session from the same checkout.
 It is useful for install/profile isolation, but live Zellij session isolation is
 controlled by the session name.
 
-## Quality Of Life
+## Shell And Session Behavior
 
 Shell completions are installed for zsh and bash. They complete commands,
 workspace names, tab names, and commit queue flags from the current profile.
@@ -448,7 +462,7 @@ Session behavior:
 - Mouse scrolling and focus-follows-mouse are enabled; Ctrl-wheel pane resizing
   is disabled.
 
-## Internals And Checks
+## Development
 
 The public binary is installed as:
 

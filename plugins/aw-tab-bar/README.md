@@ -1,14 +1,11 @@
 # aw-tab-bar
 
-AW-aware Zellij tab bar plugin.
+AW-aware Zellij tab bar plugin for inline tab rename and drag reorder.
 
-This plugin follows Zellij's official Rust plugin path:
+## Build
 
-- Rust crate using `zellij-tile`
-- compiled to WASI WebAssembly
-- loaded as a normal Zellij layout plugin
-
-Current Rust toolchains expose the WASI preview 1 target as `wasm32-wasip1`:
+The plugin is a Rust `zellij-tile` crate compiled to WASI WebAssembly. Current
+Rust toolchains expose the WASI preview 1 target as `wasm32-wasip1`:
 
 ```bash
 rustup target add wasm32-wasip1
@@ -21,6 +18,8 @@ The release artifact is:
 plugins/aw-tab-bar/target/wasm32-wasip1/release/aw-tab-bar.wasm
 ```
 
+## Install
+
 `aw install` copies that artifact to:
 
 ```text
@@ -30,6 +29,8 @@ plugins/aw-tab-bar/target/wasm32-wasip1/release/aw-tab-bar.wasm
 Use `AW_TAB_BAR_WASM_SOURCE=/path/to/aw-tab-bar.wasm aw install` to install a
 WASM artifact from a custom build location. Use `AW_TAB_BAR_PLUGIN_PATH` when
 rendering a layout against an explicit plugin path.
+
+## Configuration
 
 Enable it per profile:
 
@@ -47,16 +48,18 @@ plugin location="file:/path/to/aw-tab-bar.wasm" {
 }
 ```
 
-Behavior:
+## Behavior
 
 - single click focuses a tab after the double-click window expires
-- drag and release runs `aw tab move <workspace> <tab>@<index>`
+- drag and release runs `aw <workspace> tab move <tab>@<index>`
 - double-click enters inline rename
-- Enter runs `aw tab rename <workspace> <old-tab> <new-tab>`
+- Enter runs `aw <workspace> tab rename <old-tab> <new-tab>`
 - Esc cancels inline rename
 
-Tab names intentionally use AW's safe workspace name set:
-letters, numbers, `.`, `_`, and `-`.
+Tab names intentionally use AW's safe workspace name set: letters, numbers,
+`.`, `_`, and `-`.
+
+## Smoke Check
 
 Smoke check the installed plugin with a disposable Zellij session:
 
