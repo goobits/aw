@@ -8,6 +8,7 @@ use std::process::Command;
 use std::time::Instant;
 
 use crate::error::{AwError, Result};
+use crate::help;
 
 const DEFAULT_GIT_MEASURE_PATH: &str = "infra/aw";
 const DEFAULT_ROUTES_CONFIG_PATH: &str = "config/aw/routes.conf";
@@ -578,7 +579,7 @@ fn line_count(text: &str) -> usize {
 }
 
 pub fn print_usage() {
-    println!("{}", REPO_USAGE);
+    help::println(REPO_USAGE);
 }
 
 fn repo_usage(message: impl Into<String>) -> AwError {

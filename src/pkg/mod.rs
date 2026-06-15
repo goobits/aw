@@ -1,6 +1,7 @@
 use std::env;
 
 use crate::error::{AwError, Result};
+use crate::help;
 use crate::queue_lock::{self, QueueLock};
 
 const QUEUE_NAME: &str = "pkgq";
@@ -66,10 +67,10 @@ fn print_lock_info() -> Result<i32> {
 }
 
 fn print_usage() {
-    println!(
+    help::println(
         "Usage:
   aw owner pkg lock-info
   aw owner pkg -- install --lockfile-only
-  aw owner pkg -- add <package> --filter <workspace>"
+  aw owner pkg -- add <package> --filter <workspace>",
     );
 }

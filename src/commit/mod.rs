@@ -6,6 +6,7 @@ use serde_json::Value;
 
 use crate::commit_queue;
 use crate::error::{AwError, Result};
+use crate::help;
 use crate::paths::{shell_quote, validate_name};
 use crate::profile::{default_workspace_from_config, find_config_dir, install_profile};
 use crate::tabs::upsert_workspace_tab_line;
@@ -29,7 +30,7 @@ pub fn run_commit_command(args: &[String]) -> Result<i32> {
 
     match action.as_str() {
         "-h" | "--help" | "help" => {
-            println!("{}", COMMIT_USAGE);
+            help::println(COMMIT_USAGE);
             Ok(0)
         }
         "setup" => {

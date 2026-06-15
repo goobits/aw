@@ -32,7 +32,7 @@ use crate::zellij::{
     sync_workspace_session, zellij_passthrough,
 };
 
-pub const USAGE: &str = r#"🧭 aw: Zero-friction Zellij workspaces
+pub const USAGE: &str = r#"🌀 aw: Zero-friction Zellij workspaces
 
 usage:
   aw                                show help

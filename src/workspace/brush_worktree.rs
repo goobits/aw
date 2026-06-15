@@ -6,6 +6,7 @@ use std::process::Command;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::error::{AwError, Result};
+use crate::help;
 use crate::paths::{path_string, shell_quote};
 use crate::queue_lock;
 
@@ -332,7 +333,7 @@ fn default_branch() -> String {
 }
 
 fn print_usage() {
-    println!(
+    help::println(
         "Usage: aw repo worktree <path> [--branch name] [--base ref] [--skip-deps] [--copy-deps]
 
 Creates a branch-backed Brush API worktree, hydrates local submodules from the
@@ -341,6 +342,6 @@ symlinks the dependency link structure needed for Brush API typechecks.
 
 Options:
   --skip-deps  Leave node_modules paths untouched.
-  --copy-deps  Copy node_modules paths instead of symlinking them."
+  --copy-deps  Copy node_modules paths instead of symlinking them.",
     );
 }

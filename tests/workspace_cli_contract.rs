@@ -47,7 +47,7 @@ fn bare_aw_shows_help_instead_of_launching_default_workspace() {
         .output()
         .expect("run bare aw");
     assert_success("bare aw", &output);
-    assert!(stdout(&output).contains("🧭 aw: Zero-friction Zellij workspaces"));
+    assert!(stdout(&output).contains("🌀 aw: Zero-friction Zellij workspaces"));
     assert!(stdout(&output).contains("aw                                show help"));
 }
 
@@ -643,7 +643,7 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
             .lines()
             .nth(1)
             .unwrap(),
-        "🧭 aw: Zero-friction Zellij workspaces"
+        "🌀 aw: Zero-friction Zellij workspaces"
     );
 
     let strict_project = home.root.join("strict-project");

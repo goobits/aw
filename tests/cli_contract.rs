@@ -11,7 +11,7 @@ fn help_prints_public_cli_header_on_stdout() {
     let output = aw().arg("help").output().expect("run aw help");
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.starts_with("\n🧭 aw: Zero-friction Zellij workspaces"));
+    assert!(stdout.starts_with("\n🌀 aw: Zero-friction Zellij workspaces"));
     assert!(stdout.ends_with("\n\n"));
     assert!(output.stderr.is_empty());
 }

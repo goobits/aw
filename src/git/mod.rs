@@ -5,6 +5,7 @@ use std::process::Command;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::error::{AwError, Result};
+use crate::help;
 use crate::paths::path_string;
 use crate::queue_lock::{self, QueueLock};
 
@@ -402,7 +403,7 @@ pub(super) fn timestamp() -> String {
 }
 
 fn print_usage() {
-    println!(
+    help::println(
         "Usage:
   aw owner git status [git status args]
   aw owner git status-fast [git status args]
@@ -421,6 +422,6 @@ fn print_usage() {
   aw owner git submodule-status
   aw owner git shell
   aw owner git commit-owned -m \"message\" -- <owned paths...>
-  aw owner git -- <read-only raw git args...>"
+  aw owner git -- <read-only raw git args...>",
     );
 }
