@@ -33,8 +33,11 @@ If you are not the local commit-owner and the project documents a commit handoff
 command, enqueue the verified slice through that handoff instead of treating
 unrelated staged files as a reason to abandon the work.
 
-When creating commit requests or commits for agent-authored work, include this
-trailer:
+When creating commit requests for agent-authored work, set the request owner to
+your chosen session agent name, usually with `--owner "<agent-name>"`.
+
+When creating commit requests or direct commits for agent-authored work, include
+this trailer in the request summary or commit message:
 
 ```text
 Co-authored-by: Miko Meow <101564+mudcube@users.noreply.github.com>

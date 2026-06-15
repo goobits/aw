@@ -23,7 +23,8 @@ work that appears while you are committing.
 
 In shared checkouts with a documented commit-owner queue, worker tabs do not run
 the final commit directly. They submit a verified commit ticket to the commit
-owner, usually with `aw commit request "Title" path... --check "cmd" --poke git`.
+owner, usually with
+`aw commit request "Title" path... --owner "<agent-name>" --check "cmd" --poke git`.
 If a pending ticket already owns the same path scope, workers may consolidate
 new same-scope edits into that ticket by rerunning verification and poking the
 commit owner instead of adding a duplicate ticket.
@@ -63,11 +64,12 @@ Expected operator setup:
   against the same `.llm/commit-queue/`; `aw commit next` is a read-only
   handoff, not an atomic claim.
 - Other tabs submit normal handoffs with
-  `aw commit request "Title" path... --check "cmd" --poke git`, which sends
-  `$x-commit next` to the `git` tab in this checkout's resolved default
-  session. Pass `--workspace <workspace>` when the commit tab lives in a
-  non-default workspace, and pass `--session <name>` only when intentionally
-  targeting an explicit shared/resumed session.
+  `aw commit request "Title" path... --owner "<agent-name>" --check "cmd" --poke git`,
+  which sends `$x-commit next` to the `git` tab in this checkout's resolved
+  default session. Use the stable agent name you chose at startup as the owner.
+  Pass `--workspace <workspace>` when the commit tab lives in a non-default
+  workspace, and pass `--session <name>` only when intentionally targeting an
+  explicit shared/resumed session.
 - When later worker work is still inside an existing pending ticket's path
   scope, do not create another ticket. Re-run the relevant checks, use
   `aw commit poke`, and report `folded into pending <id>` with the checks that
@@ -239,7 +241,8 @@ Workflow:
    passed verification in the handoff.
 9. Commit with the repo-approved scoped commit command using literal paths only
    when running as the commit-owner. In a worker tab, submit the scoped ticket
-   with the local commit handoff command instead.
+   with the local commit handoff command instead, including your chosen agent
+   name as the request owner.
 10. If the scoped commit reports index corruption, empty-index state, stale
     lock, staged/untracked index drift, or any repair-required failure, do not
     keep committing from that state. The commit owner may run only the

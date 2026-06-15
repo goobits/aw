@@ -67,7 +67,7 @@ sessions:
 
 commit queue:
   aw commit setup [workspace] [--tab git] [--session <name>] [--agent <cmd>|--no-agent]
-  aw commit request <title> <path>... [--check <cmd>] [--summary <text>] [--queue-root <path>] [--poke [tab]] [--workspace <workspace>] [--session <name>] [--wait] [--timeout 10m]
+  aw commit request <title> <path>... [--owner <name>] [--check <cmd>] [--summary <text>] [--queue-root <path>] [--poke [tab]] [--workspace <workspace>] [--session <name>] [--wait] [--timeout 10m]
   aw commit status [--queue-root <path>]
   aw commit doctor [--queue-root <path>]
   aw commit wait <id> [--queue-root <path>] [--timeout 10m]

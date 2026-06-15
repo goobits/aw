@@ -52,6 +52,8 @@ fn commit_queue_commands_create_wait_report_and_validate_requests() {
             "request",
             "Commit queue docs",
             "README.md",
+            "--owner",
+            "Maple",
             "--check",
             "echo ok",
             "--must-contain",
@@ -65,6 +67,13 @@ fn commit_queue_commands_create_wait_report_and_validate_requests() {
     assert_success("commit request", &output);
     assert!(stdout(&output).starts_with("Created commit request "));
     assert!(stdout(&output).contains("Run `aw commit poke --queue-root "));
+    let pending_file = std::fs::read_dir(queue.join("pending"))
+        .unwrap()
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .find(|path| path.extension().and_then(|ext| ext.to_str()) == Some("json"))
+        .expect("pending request file");
+    assert!(read(pending_file).contains(r#""owner": "Maple""#));
     assert_eq!(
         std::fs::read_dir(queue.join("pending"))
             .unwrap()

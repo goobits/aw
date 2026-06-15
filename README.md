@@ -280,6 +280,7 @@ Worker flow:
 
 ```bash
 aw commit request "Update docs" README.md \
+  --owner "AgentName" \
   --check "cargo test" \
   --summary "Short context" \
   --poke git
@@ -301,6 +302,7 @@ Useful request flags:
 | Flag | Use |
 |---|---|
 | `--queue-root <path>` | Share a custom queue path between request/status/owner commands. |
+| `--owner <name>` | Record the requesting agent's chosen session name. |
 | `--workspace <workspace>` | Target the default session for a specific workspace when poking. |
 | `--session <name>` | Target an explicit shared/resumed Zellij session. |
 | `--wait --timeout 10m` | Wait for the request just created. |

@@ -6,6 +6,9 @@ Portable instructions for LLMs working in a repository that uses this shared
 ## Core Rules
 
 - Be direct, calm, practical, and concise.
+- On first startup in a repo/session, choose a short stable agent name for
+  yourself. Keep that name for the life of the session and use it in handoffs
+  where identity matters, especially commit requests.
 - Ship long-term, A++ solid work. Avoid jank, cruft, duplication, compatibility
   wrappers, legacy leftovers, and temporary bridges unless the user explicitly
   asks for a staged migration.
