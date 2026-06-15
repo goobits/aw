@@ -1,3 +1,8 @@
+/// Columns a zellij ribbon adds around its label: a leading and trailing
+/// powerline separator plus one padding space on each side (`<sep> label <sep>`).
+/// Click spans add this so hit-testing matches the rendered ribbon width.
+pub const RIBBON_DECORATION_WIDTH: usize = 4;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TabItem {
     pub id: usize,
@@ -102,7 +107,7 @@ impl TabBarState {
         let mut vis = 0usize;
         for (index, tab) in self.tabs.iter().enumerate() {
             let label = self.tab_visible_label(tab);
-            let width = label.chars().count();
+            let width = label.chars().count() + RIBBON_DECORATION_WIDTH;
             if vis + width > cols {
                 break;
             }
@@ -189,7 +194,7 @@ impl TabBarState {
     pub fn key(&mut self, key: KeyInput) -> Option<TabBarCommand> {
         let rename = self.rename.as_mut()?;
         match key {
-            KeyInput::Char(ch) if is_valid_tab_name_char(ch) => {
+            KeyInput::Char(ch) if is_valid_tab_rename_spec_char(ch) => {
                 rename.input.push(ch);
                 None
             }
@@ -205,7 +210,7 @@ impl TabBarState {
                 let rename = self.rename.take()?;
                 if rename.input.is_empty()
                     || rename.input == rename.old_name
-                    || !is_valid_tab_name(&rename.input)
+                    || !is_valid_tab_rename_spec(&rename.input)
                 {
                     return None;
                 }
@@ -219,15 +224,16 @@ impl TabBarState {
     }
 
     fn tab_visible_label(&self, tab: &TabItem) -> String {
+        // Bare label; the ribbon renderer adds the separators and padding.
         if let Some(rename) = &self.rename {
             if rename.old_name == tab.name {
-                return format!(" {}| ", rename.input);
+                return format!("{}|", rename.input);
             }
         }
 
         let sync = if tab.sync_panes { "~" } else { "" };
         let bell = if tab.has_bell { "!" } else { "" };
-        format!(" {}{}{} ", tab.name, sync, bell)
+        format!("{}{}{}", tab.name, sync, bell)
     }
 
     fn begin_rename(&mut self, index: usize) {
@@ -261,6 +267,19 @@ impl TabBarState {
 
 pub fn is_valid_tab_name(value: &str) -> bool {
     !value.is_empty() && value.chars().all(is_valid_tab_name_char)
+}
+
+fn is_valid_tab_rename_spec(value: &str) -> bool {
+    if let Some((name, index)) = value.rsplit_once('@') {
+        return is_valid_tab_name(name)
+            && !index.is_empty()
+            && index.chars().all(|ch| ch.is_ascii_digit());
+    }
+    is_valid_tab_name(value)
+}
+
+fn is_valid_tab_rename_spec_char(ch: char) -> bool {
+    is_valid_tab_name_char(ch) || ch == '@'
 }
 
 fn is_valid_tab_name_char(ch: char) -> bool {
@@ -300,8 +319,9 @@ mod tests {
         let tabs = state.render(80);
         assert_eq!(
             tabs.iter().map(|t| t.label.as_str()).collect::<Vec<_>>(),
-            vec![" app ", " server "]
+            vec!["app", "server"]
         );
+        // Each ribbon is label + RIBBON_DECORATION_WIDTH (4) wide.
         assert_eq!(
             state.spans(),
             &[
@@ -310,14 +330,14 @@ mod tests {
                     name: "app".to_string(),
                     index: 0,
                     start: 0,
-                    end: 5,
+                    end: 7,
                 },
                 TabSpan {
                     tab_id: 2,
                     name: "server".to_string(),
                     index: 1,
-                    start: 5,
-                    end: 13,
+                    start: 7,
+                    end: 17,
                 },
             ]
         );
@@ -368,11 +388,11 @@ mod tests {
         state.render(80);
 
         state.click(2); // press on "app"
-        state.hold(8); // motion over "server"
-        state.hold(15); // motion over "git"
+        state.hold(10); // motion over "server"
+        state.hold(20); // motion over "git"
 
         assert_eq!(
-            state.release(15), // release over "git"
+            state.release(20), // release over "git"
             Some(TabBarCommand::Move {
                 name: "app".to_string(),
                 index: 2,
@@ -392,7 +412,7 @@ mod tests {
 
         state.click(2); // press on "app"; no Hold/motion events delivered
         assert_eq!(
-            state.release(15), // release over "git" (span [13,18))
+            state.release(20), // release over "git" (span [17,24))
             Some(TabBarCommand::Move {
                 name: "app".to_string(),
                 index: 2,
@@ -436,5 +456,37 @@ mod tests {
                 new_name: "api".to_string(),
             })
         );
+    }
+
+    #[test]
+    fn rename_accepts_index_suffix_as_command_syntax() {
+        let mut state = TabBarState::default();
+        state.replace_tabs(vec![item(1, 0, "app")]);
+        state.render(80);
+        state.click(2);
+        state.click(2);
+        state.key(KeyInput::Char('@'));
+        state.key(KeyInput::Char('1'));
+
+        assert_eq!(
+            state.key(KeyInput::Enter),
+            Some(TabBarCommand::Rename {
+                old_name: "app".to_string(),
+                new_name: "app@1".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn rename_rejects_malformed_index_suffix() {
+        let mut state = TabBarState::default();
+        state.replace_tabs(vec![item(1, 0, "app")]);
+        state.render(80);
+        state.click(2);
+        state.click(2);
+        state.key(KeyInput::Char('@'));
+        state.key(KeyInput::Char('x'));
+
+        assert_eq!(state.key(KeyInput::Enter), None);
     }
 }

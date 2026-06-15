@@ -5,6 +5,7 @@ use crate::brush_worktree;
 use crate::commit::run_commit_command;
 use crate::error::{AwError, Result};
 use crate::git_queue;
+use crate::help;
 use crate::installer::{install_repo_adapters, install_workspace_setup};
 use crate::package_queue;
 use crate::paths::{
@@ -21,7 +22,7 @@ use crate::profile::{
 use crate::repo_tasks;
 use crate::tabs::{
     parse_indexed_tab_spec, parse_tabs_args, parse_tabs_csv, remove_workspace_tab_line,
-    rename_workspace_tab_line, upsert_workspace_tab_line, validate_workspace_tab_rename,
+    rename_workspace_tab_line_from_spec, upsert_workspace_tab_line, validate_workspace_tab_rename,
     write_tabs_file,
 };
 use crate::workspace_tasks;
@@ -49,13 +50,13 @@ tabs:
   aw tab list [--session <name>]                    shorthand when exactly one workspace exists
   aw tab add <tab[@index]> [--session <name>]       shorthand when exactly one workspace exists
   aw tab move <tab@index> [--session <name>]        shorthand when exactly one workspace exists
-  aw tab rename <old-tab> <new-tab>
+  aw tab rename <old-tab> <new-tab[@index]>
   aw tab remove <tab> [--session <name>]            shorthand when exactly one workspace exists
   aw tab refresh [--session <name>]                 shorthand when exactly one workspace exists
   aw <workspace> tab list [--session <name>]
   aw <workspace> tab add <tab[@index]> [--session <name>]
   aw <workspace> tab move <tab@index> [--session <name>]
-  aw <workspace> tab rename <old-tab> <new-tab> [--session <name>]
+  aw <workspace> tab rename <old-tab> <new-tab[@index]> [--session <name>]
   aw <workspace> tab remove <tab> [--session <name>]
   aw <workspace> tab refresh [--session <name>]
 
@@ -97,11 +98,11 @@ pub fn run(args: Vec<String>) -> Result<i32> {
     let command = args.first().map(String::as_str).unwrap_or("");
     match command {
         "-h" | "--help" | "help" => {
-            print!("{}", USAGE);
+            help::print(USAGE);
             Ok(0)
         }
         "" => {
-            print!("{}", USAGE);
+            help::print(USAGE);
             Ok(0)
         }
         "install" => run_install(&args[1..]),
@@ -690,7 +691,7 @@ fn tab_action_example(workspace: Option<&str>, action: &str) -> String {
         "add" => format!("{prefix} add <tab[@index]> [--session <name>]"),
         "move" => format!("{prefix} move <tab@index> [--session <name>]"),
         "remove" => format!("{prefix} remove <tab> [--session <name>]"),
-        "rename" => format!("{prefix} rename <old-tab> <new-tab> [--session <name>]"),
+        "rename" => format!("{prefix} rename <old-tab> <new-tab[@index]> [--session <name>]"),
         _ => format!("{prefix} <list|add|move|rename|remove|refresh>"),
     }
 }
@@ -795,12 +796,22 @@ fn run_workspace_tab_command(
                     workspace
                 )));
             }
-            validate_workspace_tab_rename(&tabs_file, &args[0], &args[1])?;
-            rename_live_workspace_tab(&session_name, &args[0], &args[1])?;
-            rename_workspace_tab_line(&tabs_file, &args[0], &args[1])?;
+            let indexed = parse_indexed_tab_spec(&args[1])?;
+            validate_workspace_tab_rename(&tabs_file, &args[0], &indexed.name)?;
+            rename_live_workspace_tab(&session_name, &args[0], &indexed.name)?;
+            rename_workspace_tab_line_from_spec(&tabs_file, &args[0], &args[1])?;
             install_profile(&config_dir, true)?;
             sync_workspace_session(&config_dir, workspace, Some(&session_name))?;
-            println!("Renamed tab {} to {} in {}.", args[0], args[1], workspace);
+            match indexed.index {
+                Some(index) => println!(
+                    "Renamed tab {} to {} and moved it to {}@{}.",
+                    args[0], indexed.name, workspace, index
+                ),
+                None => println!(
+                    "Renamed tab {} to {} in {}.",
+                    args[0], indexed.name, workspace
+                ),
+            }
         }
         other => {
             return Err(AwError::usage(format!(
@@ -963,7 +974,7 @@ fn run_launch(workspace: &str, args: &[String]) -> Result<i32> {
                 index += 2;
             }
             "-h" | "--help" => {
-                print!("{}", USAGE);
+                help::print(USAGE);
                 return Ok(0);
             }
             other => {

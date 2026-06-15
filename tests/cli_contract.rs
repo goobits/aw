@@ -17,6 +17,20 @@ fn help_prints_public_cli_header_on_stdout() {
 }
 
 #[test]
+fn help_supports_forced_dracula_color() {
+    let output = aw()
+        .arg("help")
+        .env("AW_COLOR", "always")
+        .output()
+        .expect("run aw help with color");
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("\u{1b}[38;2;189;147;249m"));
+    assert!(stdout.contains("\u{1b}[38;2;255;121;198mworkspaces:"));
+    assert!(stdout.contains("aw tab rename <old-tab> <new-tab[@index]>"));
+}
+
+#[test]
 fn commit_request_rejects_missing_paths_before_queue_lookup() {
     let output = aw()
         .args(["commit", "request", "Missing paths"])

@@ -10,7 +10,7 @@ mod workspace;
 mod zellij;
 
 pub(crate) use commit::queue as commit_queue;
-pub(crate) use core::{error, paths};
+pub(crate) use core::{error, help, paths};
 pub(crate) use git as git_queue;
 pub(crate) use install as installer;
 pub(crate) use pkg as package_queue;
@@ -45,7 +45,7 @@ fn main() {
                 eprintln!("{}", error.message);
             }
             if error.show_usage {
-                eprintln!("{}", cli::USAGE.trim_end());
+                eprintln!("{}", help::format(cli::USAGE.trim_end()));
             }
             std::process::exit(error.code);
         }

@@ -142,6 +142,7 @@ aw main tab add keyboard
 aw main tab add keyboard@1
 aw main tab move keyboard@1
 aw main tab rename keyboard keys
+aw main tab rename keyboard keys@1
 aw main tab remove keyboard
 aw main tab refresh
 aw main tab refresh --session shared-dev
@@ -154,6 +155,7 @@ aw tab list
 aw tab add keyboard@1
 aw tab move keyboard@2
 aw tab rename keyboard keys
+aw tab rename keyboard keys@1
 aw tab remove keys
 aw tab refresh
 ```

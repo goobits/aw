@@ -150,10 +150,38 @@ pub fn remove_workspace_tab_line(tabs_file: &Path, remove_name: &str) -> Result<
     Ok(())
 }
 
-pub fn rename_workspace_tab_line(tabs_file: &Path, old_name: &str, new_name: &str) -> Result<()> {
-    let next_lines = renamed_workspace_tab_lines(tabs_file, old_name, new_name)?;
+pub(crate) fn rename_workspace_tab_line_from_spec(
+    tabs_file: &Path,
+    old_name: &str,
+    new_spec: &str,
+) -> Result<IndexedTab> {
+    let indexed = parse_indexed_tab_spec(new_spec)?;
+    let mut next_lines = renamed_workspace_tab_lines(tabs_file, old_name, &indexed.name)?;
+    if let Some(index) = indexed.index {
+        let mut moved_line = None;
+        let mut remaining_lines = Vec::new();
+        for line in next_lines {
+            if tab_name_from_line(&line) == indexed.name {
+                moved_line = Some(line);
+            } else {
+                remaining_lines.push(line);
+            }
+        }
+        let line = moved_line.ok_or_else(|| {
+            AwError::new(
+                format!("aw: tab not found in workspace file: {}", indexed.name),
+                1,
+            )
+        })?;
+        if index < remaining_lines.len() {
+            remaining_lines.insert(index, line);
+        } else {
+            remaining_lines.push(line);
+        }
+        next_lines = remaining_lines;
+    }
     fs::write(tabs_file, format!("{}\n", next_lines.join("\n")))?;
-    Ok(())
+    Ok(indexed)
 }
 
 pub fn validate_workspace_tab_rename(

@@ -277,9 +277,13 @@ fn tab_rename_preserves_live_tab_instead_of_recreating_it() {
 
     let output = home
         .aw_command()
-        .args(["front", "tab", "rename", "keyboard", "keys"])
+        .args(["front", "tab", "rename", "keyboard", "keys@1"])
         .current_dir(&project)
         .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env(
+            "FAKE_ZELLIJ_SESSIONS",
+            expected_session("project", "front", project.display()),
+        )
         .env(
             "FAKE_ZELLIJ_ORDER_ARGS",
             home.root.join("front-rename-order.txt"),
@@ -290,12 +294,12 @@ fn tab_rename_preserves_live_tab_instead_of_recreating_it() {
 
     assert_eq!(
         read(profile.join("front.tabs")),
-        "tools\ncomponents\nkeys\nscratch\n"
+        "tools\nkeys\ncomponents\nscratch\n"
     );
     assert_eq!(fake_zellij::tab_name(&tabs, "2"), "keys");
     assert_eq!(
         fake_zellij::sorted_tab_names(&tabs),
-        vec!["tools", "components", "keys", "scratch"]
+        vec!["tools", "keys", "components", "scratch"]
     );
     assert!(!tabs.with_extension("cwds").exists());
 }
@@ -352,8 +356,8 @@ fn tab_commands_infer_the_only_workspace() {
             "shorthand-move-order.txt",
         ),
         (
-            vec!["tab", "rename", "keyboard", "keys"],
-            "tools\nkeys\nsearch\nscratch\n",
+            vec!["tab", "rename", "keyboard", "keys@0"],
+            "keys\ntools\nsearch\nscratch\n",
             "shorthand-rename-order.txt",
         ),
         (
@@ -407,7 +411,7 @@ fn malformed_tab_and_launch_commands_report_scoped_usage() {
 
     let bad_rename = run_in_project(&home, &project, &["tab", "rename", "keyboard"]);
     assert_failure("bad tab rename", &bad_rename);
-    assert!(stderr(&bad_rename).contains("aw tab rename <old-tab> <new-tab>"));
+    assert!(stderr(&bad_rename).contains("aw tab rename <old-tab> <new-tab[@index]>"));
     assert!(!stderr(&bad_rename).contains("Zero-friction Zellij workspaces"));
 
     let bad_workspace_list = run_in_project(&home, &project, &["front", "tab", "list", "extra"]);
@@ -426,6 +430,18 @@ fn malformed_tab_and_launch_commands_report_scoped_usage() {
     let bad_index = run_in_project(&home, &project, &["front", "tab", "move", "keyboard@later"]);
     assert_failure("bad tab index", &bad_index);
     assert!(stderr(&bad_index).contains("tab index must be a number"));
+    assert_eq!(
+        read(profile.join("front.tabs")),
+        "tools\nkeyboard\nscratch\n"
+    );
+
+    let bad_rename_index = run_in_project(
+        &home,
+        &project,
+        &["front", "tab", "rename", "keyboard", "keys@later"],
+    );
+    assert_failure("bad tab rename index", &bad_rename_index);
+    assert!(stderr(&bad_rename_index).contains("tab index must be a number"));
     assert_eq!(
         read(profile.join("front.tabs")),
         "tools\nkeyboard\nscratch\n"
