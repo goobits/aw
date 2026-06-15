@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::error::{AwError, Result};
-use crate::paths::{aw_legacy_state_dir, aw_plugins_dir};
+use crate::paths::aw_plugins_dir;
 use crate::profile::profile_value;
 
 pub fn kdl_escape(value: &str) -> String {
@@ -88,13 +88,9 @@ fn aw_tab_bar_plugin_path() -> Option<PathBuf> {
         }
     }
 
-    for installed in [
-        aw_plugins_dir().join("aw-tab-bar.wasm"),
-        aw_legacy_state_dir().join("plugins/aw-tab-bar.wasm"),
-    ] {
-        if installed.is_file() {
-            return Some(installed);
-        }
+    let installed = aw_plugins_dir().join("aw-tab-bar.wasm");
+    if installed.is_file() {
+        return Some(installed);
     }
     None
 }

@@ -39,9 +39,7 @@ If `zellij` is missing, the installer downloads pinned Zellij `0.44.3` for
 supported platforms. Set `ZELLIJ_INSTALL_BINARY=0` to skip that step.
 
 AW-owned state is installed under `~/.aw` by default. Set `AW_HOME` to use a
-custom home. Existing installs under `~/.local/share/agent-workspace` and
-`~/.config/aw` are read as legacy fallbacks and copied forward during install
-when `~/.aw` is not already populated.
+custom home.
 
 Refresh a profile directly when needed:
 
@@ -207,7 +205,7 @@ Cleanup categories:
 | `--generated` | `.turbo`, `.svelte-kit` |
 | `--rust-targets` | Rust/Cargo `target` directories |
 | `--nested-node-modules` | Package-local `node_modules`, not root `node_modules` |
-| `--preprocessed` | Legacy `_preprocessed` and code-watcher cache folders |
+| `--preprocessed` | Old `_preprocessed` and code-watcher cache folders |
 | `--all-safe` | All safe categories above |
 | `--build-outputs` | `dist` and `build`; review dry-run output first |
 
@@ -479,13 +477,6 @@ The installer also writes:
 ~/.aw/completions/
 ~/.aw/plugins/
 marked shell blocks in ~/.zshrc and ~/.bashrc
-```
-
-Legacy fallback paths are still recognized for existing installs:
-
-```text
-~/.local/share/agent-workspace/
-~/.config/aw/config.kdl
 ```
 
 Run these after changing AW:

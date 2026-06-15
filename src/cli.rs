@@ -9,9 +9,9 @@ use crate::help;
 use crate::installer::{install_repo_adapters, install_workspace_setup};
 use crate::package_queue;
 use crate::paths::{
-    aw_completions_dir, aw_config_file, aw_default_profile_file, aw_home, aw_legacy_config_file,
-    aw_legacy_default_profile_file, aw_legacy_profiles_dir, aw_plugins_dir, aw_private_bin_dir,
-    aw_profiles_dir, current_dir, local_bin_dir, path_string, resolve_root, validate_name,
+    aw_completions_dir, aw_config_file, aw_default_profile_file, aw_home, aw_plugins_dir,
+    aw_private_bin_dir, aw_profiles_dir, current_dir, local_bin_dir, path_string, resolve_root,
+    validate_name,
 };
 use crate::profile::{
     add_profile_workspace, auto_install_config, create_initial_profile,
@@ -255,14 +255,6 @@ fn run_paths(args: &[String]) -> Result<i32> {
     println!("Completions  {}", path_string(&aw_completions_dir()));
     println!("Plugins      {}", path_string(&aw_plugins_dir()));
     println!("Public bin   {}", path_string(&local_bin_dir()));
-    println!();
-    println!("Legacy");
-    println!("Config       {}", path_string(&aw_legacy_config_file()));
-    println!("Profiles     {}", path_string(&aw_legacy_profiles_dir()));
-    println!(
-        "Default      {}",
-        path_string(&aw_legacy_default_profile_file())
-    );
     Ok(0)
 }
 

@@ -45,35 +45,12 @@ pub fn aw_plugins_dir() -> PathBuf {
     aw_home().join("plugins")
 }
 
-pub fn aw_legacy_state_dir() -> PathBuf {
-    home_dir().join(".local/share/agent-workspace")
+pub fn aw_default_profile_candidates() -> [PathBuf; 1] {
+    [aw_default_profile_file()]
 }
 
-pub fn aw_legacy_config_file() -> PathBuf {
-    home_dir().join(".config/aw/config.kdl")
-}
-
-pub fn aw_legacy_default_profile_file() -> PathBuf {
-    aw_legacy_state_dir().join("default-profile")
-}
-
-pub fn aw_legacy_profiles_dir() -> PathBuf {
-    aw_legacy_state_dir().join("profiles")
-}
-
-pub fn aw_legacy_private_bin_dir() -> PathBuf {
-    aw_legacy_state_dir().join("bin")
-}
-
-pub fn aw_default_profile_candidates() -> [PathBuf; 2] {
-    [aw_default_profile_file(), aw_legacy_default_profile_file()]
-}
-
-pub fn aw_profile_dir_candidates(profile_name: &str) -> [PathBuf; 2] {
-    [
-        aw_profiles_dir().join(profile_name),
-        aw_legacy_profiles_dir().join(profile_name),
-    ]
+pub fn aw_profile_dir_candidates(profile_name: &str) -> [PathBuf; 1] {
+    [aw_profiles_dir().join(profile_name)]
 }
 
 pub fn current_dir() -> Result<PathBuf> {
@@ -99,7 +76,7 @@ pub fn helper_path(executable: &str) -> PathBuf {
         return primary;
     }
 
-    aw_legacy_private_bin_dir().join(executable)
+    primary
 }
 
 pub fn resolve_root(path: &str) -> Result<PathBuf> {

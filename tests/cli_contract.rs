@@ -114,5 +114,5 @@ fn paths_reports_aw_home_layout() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("AW Paths"));
     assert!(stdout.contains(".aw"));
-    assert!(stdout.contains("Legacy"));
+    assert!(stdout.contains("Plugins"));
 }

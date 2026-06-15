@@ -6,8 +6,7 @@ use std::process::{Command, Stdio};
 
 use crate::error::{AwError, Result};
 use crate::paths::{
-    aw_completions_dir, aw_config_file, aw_default_profile_file, aw_home, aw_legacy_config_file,
-    aw_legacy_default_profile_file, aw_legacy_profiles_dir, aw_plugins_dir, aw_private_bin_dir,
+    aw_completions_dir, aw_config_file, aw_home, aw_plugins_dir, aw_private_bin_dir,
     aw_profiles_dir, home_dir, local_bin_dir,
 };
 use serde_json::{json, Value};
@@ -367,7 +366,6 @@ fn install_zellij_binary() -> Result<()> {
 }
 
 fn install_files() -> Result<()> {
-    migrate_legacy_aw_home()?;
     let local_bin = local_bin_dir();
     let internal_bin = aw_private_bin_dir();
     let completion_dir = aw_completions_dir();
@@ -407,53 +405,6 @@ fn install_files() -> Result<()> {
         ".zellij-codex-tab-watcher",
     ] {
         let _ = fs::remove_file(local_bin.join(stale));
-    }
-    for stale in ["backend.kdl", "frontend.kdl"] {
-        let _ = fs::remove_file(home_dir().join(".config/aw/layouts").join(stale));
-    }
-    Ok(())
-}
-
-fn migrate_legacy_aw_home() -> Result<()> {
-    let profiles_dir = aw_profiles_dir();
-    let legacy_profiles = aw_legacy_profiles_dir();
-    if !profiles_dir.exists() && legacy_profiles.is_dir() {
-        copy_dir_recursive(&legacy_profiles, &profiles_dir)?;
-    }
-
-    let default_profile = aw_default_profile_file();
-    let legacy_default = aw_legacy_default_profile_file();
-    if !default_profile.exists() && legacy_default.is_file() {
-        if let Some(parent) = default_profile.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::copy(legacy_default, default_profile)?;
-    }
-
-    let config_file = aw_config_file();
-    let legacy_config = aw_legacy_config_file();
-    if !config_file.exists() && legacy_config.is_file() {
-        if let Some(parent) = config_file.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::copy(legacy_config, config_file)?;
-    }
-
-    Ok(())
-}
-
-fn copy_dir_recursive(source: &Path, target: &Path) -> Result<()> {
-    fs::create_dir_all(target)?;
-    for entry in fs::read_dir(source)? {
-        let entry = entry?;
-        let source_path = entry.path();
-        let target_path = target.join(entry.file_name());
-        let file_type = entry.file_type()?;
-        if file_type.is_dir() {
-            copy_dir_recursive(&source_path, &target_path)?;
-        } else if file_type.is_file() {
-            fs::copy(source_path, target_path)?;
-        }
     }
     Ok(())
 }

@@ -202,43 +202,6 @@ fn install_preserves_existing_claude_status_line() {
 }
 
 #[test]
-fn install_migrates_legacy_aw_state_when_new_home_is_missing() {
-    let home = TestHome::new("install-legacy-aw-migration");
-    temp::write(
-        home.home
-            .join(".local/share/agent-workspace/profiles/legacy/front.tabs"),
-        "app\nscratch\n",
-    );
-    temp::write(
-        home.home
-            .join(".local/share/agent-workspace/profiles/legacy/profile.conf"),
-        "name=legacy\n",
-    );
-    temp::write(
-        home.home
-            .join(".local/share/agent-workspace/default-profile"),
-        "legacy\n",
-    );
-    temp::write(home.home.join(".config/aw/config.kdl"), "legacy-config\n");
-
-    let output = home
-        .command(support::command::aw())
-        .env("ZELLIJ_INSTALL_BINARY", "0")
-        .env("ZELLIJ_INSTALL_SHELL_RC", "0")
-        .arg("install")
-        .output()
-        .expect("run aw install");
-    assert_success("aw install", &output);
-
-    assert!(home.home.join(".aw/profiles/legacy/front.tabs").is_file());
-    assert_eq!(
-        fs::read_to_string(home.home.join(".aw/default-profile")).unwrap(),
-        "legacy\n"
-    );
-    assert!(home.home.join(".aw/config.kdl").is_file());
-}
-
-#[test]
 fn install_repo_dry_run_reports_aw_adapters() {
     let home = TestHome::new("install-repo-dry-run");
     let repo = home.root.join("repo");

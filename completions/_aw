@@ -20,11 +20,6 @@ _aw_config_dir() {
     return
   fi
 
-  default_profile="$HOME/.local/share/agent-workspace/default-profile"
-  if [[ -f "$default_profile" ]]; then
-    profile_name="$(sed -n '1p' "$default_profile")"
-    printf '%s/.local/share/agent-workspace/profiles/%s' "$HOME" "$profile_name"
-  fi
 }
 
 _aw_workspaces() {

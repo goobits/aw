@@ -24,7 +24,7 @@ plugins/aw-tab-bar/target/wasm32-wasip1/release/aw-tab-bar.wasm
 `aw install` copies that artifact to:
 
 ```text
-~/.local/share/agent-workspace/plugins/aw-tab-bar.wasm
+~/.aw/plugins/aw-tab-bar.wasm
 ```
 
 Use `AW_TAB_BAR_WASM_SOURCE=/path/to/aw-tab-bar.wasm aw install` to install a

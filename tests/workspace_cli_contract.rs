@@ -376,8 +376,8 @@ fn tab_commands_infer_the_only_workspace() {
         .current_dir(&project)
         .env("FAKE_ZELLIJ_TABS", &tabs)
         .output()
-        .expect("legacy tab list");
-    assert_failure("legacy tab list", &output);
+        .expect("removed workspace tab shorthand");
+    assert_failure("removed workspace tab shorthand", &output);
     assert!(stderr(&output).contains("aw tab list [--session <name>]"));
 
     for (args, expected_tabs, order_file) in [
@@ -504,9 +504,9 @@ fn malformed_tab_and_launch_commands_report_scoped_usage() {
         "tools\nkeyboard\nscratch\n"
     );
 
-    let legacy_tab_add = run_in_project(&home, &project, &["tab", "add", "front", "search"]);
-    assert_failure("legacy tab add", &legacy_tab_add);
-    assert!(stderr(&legacy_tab_add).contains("aw tab add <tab[@index]>"));
+    let removed_tab_add = run_in_project(&home, &project, &["tab", "add", "front", "search"]);
+    assert_failure("removed tab add shorthand", &removed_tab_add);
+    assert!(stderr(&removed_tab_add).contains("aw tab add <tab[@index]>"));
 
     let bad_refresh = run_in_project(&home, &project, &["refresh"]);
     assert_failure("bad refresh", &bad_refresh);
@@ -888,7 +888,7 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
     assert!(stderr(&output).contains("Example: aw backend tab rename"));
 
     assert_failure(
-        "legacy front list",
+        "unsupported front list",
         &home
             .aw_command()
             .args(["front", "list"])
