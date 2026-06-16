@@ -5,33 +5,29 @@ description: 'Use when the user invokes $x-trim-code or /x-trim-code, asks to ag
 
 # X Trim Code
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing
-reports when it improves scanning; keep any stricter skill-specific output
-contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
-Use this skill for target-scoped, aggressive code-surface reduction. The goal is
-a net-smaller, better-organized, behavior-preserving proposal with strict
-public/private boundaries and no duplicate durable surface.
+Use this for target-scoped code-surface reduction: net-smaller,
+better-organized, behavior-preserving, strict public/private boundaries, and no
+duplicate durable surface.
 
 This is audit/proposal-first. Do not edit files unless the user explicitly asks
 to proceed after the trim proposal.
 
 Read `.agents/policies/quality.md`, `.agents/policies/code-standards.md`,
 `.agents/policies/testing.md`, `.agents/policies/git.md`, and
-`.agents.local/project.md` when present. Keep repo-specific package, command,
-test, visual-regression, and module rules in those files instead of this skill.
+`.agents.local/project.md` when present. Keep repo-specific commands and module
+rules there.
 
 ## Target Recovery
 
-1. Treat the word or phrase after the skill invocation as the target scope, such
-   as an app, package, feature, route, tool, module group, directory, or recent
-   slice.
+1. Treat the phrase after the skill invocation as the target: app, package,
+   feature, route, tool, module group, directory, or recent slice.
 2. If the target is ambiguous, infer the smallest likely target from repo search
    and state the assumption before proposing changes.
-3. Use repo-approved scoped state checks from `.agents.local/project.md` when
-   present: path-scoped status, unstaged diff, and staged diff.
-4. Map the target's entrypoints, exports, callers, tests, routes, demos,
-   package manifests, and nearby helpers before judging what can shrink.
+3. Use repo-approved scoped state checks from `.agents.local/project.md`.
+4. Map entrypoints, exports, callers, tests, routes, demos, manifests, and
+   nearby helpers before judging what can shrink.
 5. Search by behavior/domain terms, not only filenames, so parallel helpers,
    stale abstractions, and misplaced owners are visible.
 
@@ -58,12 +54,14 @@ test, visual-regression, and module rules in those files instead of this skill.
 
 - Aim for net-negative LOC. If the proposal is net-positive, explicitly justify
   why the added code lowers future maintenance.
-- Do not create new packages, workspace entries, package subpaths, public
-  modules, Go modules, helper libraries, durable registries, or broad shared
-  owners unless the user explicitly asks or the new surface replaces a larger
-  scattered surface.
+- Do not create packages, workspace entries, package subpaths, public modules,
+  Go modules, helper libraries, registries, or broad shared owners unless the
+  user asks or the new surface replaces a larger scattered one.
 - Do not preserve old APIs with compatibility wrappers unless the user
   explicitly asks for a staged migration.
+- When trimming creates, moves, or renames code files, apply the local file
+  naming policy; private TypeScript classes use `_PascalCase.ts` and private
+  helpers use `_camelCase.ts` in this repo.
 - Do not rename, move, or narrow public API without naming affected callers and
   migration impact.
 - Do not move code across ownership boundaries without naming the new owner and

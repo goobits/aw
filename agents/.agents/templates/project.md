@@ -61,7 +61,8 @@ Repo-specific facts for this checkout. Keep reusable agent behavior in
 ## Code Standards Overrides
 
 - Import rules:
-- File naming:
+- File naming: record class/helper and public/private file naming explicitly
+  when the project has code naming conventions.
 - Type/JSDoc expectations:
 - UI/framework conventions:
 - Security/privacy notes:

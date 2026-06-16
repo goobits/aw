@@ -5,16 +5,16 @@ description: 'Use when the user invokes $x-code-review or /x-code-review, asks f
 
 # X Code Review
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
-Use this skill for review-only work, especially when the user points at a directory or subsystem and asks for a code-quality review. Do not edit files or commit unless the user explicitly asks for fixes after the review.
-
-This is stricter than a general audit: answer whether the reviewed area is healthy enough to build on, what should be fixed first, and what risks would block calling it A++.
+Use this for review-only code-quality work. Do not edit or commit unless the
+user asks for fixes after the review. Answer whether the area is healthy enough
+to build on, what to fix first, and what blocks an A++ verdict.
 
 ## Context To Load
 
-Always follow root `AGENTS.md` and repo safety rules. When present, prefer the
-portable policy files before deeper repo docs:
+Always follow root `AGENTS.md` and repo safety rules. Prefer policy files before
+deeper repo docs:
 
 - `.agents/policies/quality.md` for the quality bar.
 - `.agents/policies/code-standards.md` for language, import, file, type, and API
@@ -23,7 +23,7 @@ portable policy files before deeper repo docs:
 - `.agents/policies/docs.md` for proposal, `.llm`, and changelog placement.
 - `.agents.local/project.md` for repo layout and project direction.
 
-For reviews that touch repo conventions, load only the relevant reference docs:
+For convention-heavy reviews, load only relevant references:
 
 - `GLOSSARY.md` for domain terms, acronyms, and canonical names.
 - `.llm/docs/conventions/common-patterns.md` for coding patterns.
@@ -36,17 +36,22 @@ For reviews that touch repo conventions, load only the relevant reference docs:
   the last reviewed commit or when the user asks for the repo review workflow,
   such as `.claude/commands/review.md` when present.
 
-Do not bulk-read `.llm/docs/`; use the index and nearest README to choose the smallest relevant doc.
+Do not bulk-read `.llm/docs/`; use indexes and nearest READMEs to choose.
 
 ## Recover Scope
 
-1. Identify what is being reviewed: usually a directory, module, package, app, server, or subsystem. Diff, PR, commit, and branch review are secondary modes only when explicitly requested.
+1. Identify the review target: directory, module, package, app, server, or
+   subsystem. Diff, PR, commit, and branch review are secondary modes only when
+   explicitly requested.
 2. Use the repo-approved Git workflow from `.agents.local/project.md` when
    present: path-scoped status, unstaged diff, staged diff, and commit/range
    inspection when commits are requested.
-3. Build a directory map with `rg --files <target>` or `find <target> -maxdepth ...` and identify the main entrypoints, tests, package exports, routes, config, migrations, and public surfaces.
-4. Read representative files across the target area, then trace the important call paths and dependencies. Do not only inspect files that are currently dirty.
-5. Separate user/other-agent changes from the target review. Dirty work is relevant when it affects the reviewed area, but the review should cover the area’s steady-state structure too.
+3. Map entrypoints, tests, exports, routes, config, migrations, and public
+   surfaces with `rg --files <target>` or focused `find`.
+4. Read representative files and trace important call paths; do not inspect only
+   dirty files.
+5. Separate unrelated dirty work from the target, while still reviewing the
+   target's steady-state structure.
 
 For commit review, use the local commit-review workflow when the user asks for
 the repo's commit-review flow. Non-trivial commits require reading the diff and
@@ -54,11 +59,13 @@ citing one concrete diff detail.
 
 ## Review Standards
 
-Review against repo language and standards. Prefer policy references over
-restating long rule sets:
+Review against repo standards. Prefer policy references over restating rule
+sets:
 
 - Quality: apply `.agents/policies/quality.md` when present.
 - Code standards: apply `.agents/policies/code-standards.md` when present.
+- File naming: apply local policy; in this repo, private TypeScript classes are
+  `_PascalCase.ts` and private helpers are `_camelCase.ts`.
 - Domain organization: code belongs with its domain language and ownership. Shared logic moves only when it is genuinely reusable.
 - Package boundaries: same-package internals use relative imports; cross-package imports use package entrypoints or intentional subpaths; never import another package's `src/`.
 - Public/private boundaries: exported package surfaces need clean names, JSDoc where required, and no accidental private helper leaks.
@@ -91,7 +98,8 @@ Do not report cosmetic nits unless they affect correctness, maintainability, acc
 
 For directory reviews, include these angles:
 
-- Organization: files named by responsibility, no history names, no broad catch-all helpers, clear public/private split.
+- Organization: files named by responsibility and local naming policy, no
+  history names, no broad catch-all helpers, clear public/private split.
 - Domain ownership: logic lives with the domain that owns it; shared helpers are genuinely cross-domain.
 - Dependency direction: stable/lower-tier modules do not depend on app-specific or higher-tier modules.
 - Duplication: repeated parsing, validation, config, SQL, route, UI, or type logic that should be centralized.

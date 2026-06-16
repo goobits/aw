@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-proposal-review or /x-proposal-review
 
 # X Proposal Review
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use when the user wants a proposed plan reviewed before implementation,
 especially with language like "A++", "no cruft", "no jank", "no dupe",
@@ -28,6 +28,8 @@ Review the proposal for:
 - Existing-first proof: before accepting `+` new files, helpers, abstractions,
   tests, docs, or tools, verify the proposal checked for similar existing owners
   and chose reuse, editing, or consolidation when possible.
+- File naming: created, moved, or renamed code files follow local file naming policy,
+  including private class/helper filename distinctions.
 - Simplicity: it removes duplication and keeps the smallest clear design that will hold up.
 - Completeness: it updates affected callers, tests, docs, exports, and references rather than leaving split APIs or half-migrations.
 - Stoppability: each phase leaves the repo coherent, avoids known breakage, and has verification before moving on.

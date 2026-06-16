@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-ascii-mockup or /x-ascii-mockup, asks
 
 # X ASCII Mockup
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to turn an idea, workflow, page, terminal output, checklist, or
 information layout into a clear plain-text mockup.

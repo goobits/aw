@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-owner-checklist or /x-owner-checklist
 
 # X Owner Checklist
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Turn mixed project status, next steps, launch gates, or proposal output into a
 concise list of what the human owner must fill in, approve, decide, create, or

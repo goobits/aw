@@ -5,12 +5,13 @@ description: 'Use when the user invokes $x-server-ports or /x-server-ports, asks
 
 # X Server Ports
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to design, audit, or implement fixed-port server lifecycle
 behavior. It is based on `.llm/scratch/prompt-palette/server-ports.md`.
 
-Read `.agents.local/project.md` and `.agents/policies/git.md` when present.
+Read `.agents.local/project.md`, `.agents/policies/code-standards.md`, and
+`.agents/policies/git.md` when present.
 Follow local dev-server ownership rules exactly. In this repo, do not stop,
 restart, or clean-restart shared dev services unless the user explicitly asks,
 or you started that exact service in the current turn.
@@ -35,6 +36,8 @@ to `PORT + 1`, random ports, or framework defaults.
 - Never kill unknown processes automatically.
 - Never auto-increment ports unless the user explicitly asks for fallback-port
   behavior and all dependents can discover it.
+- When server-port work creates, moves, or renames code files, apply the local
+  file naming policy.
 
 ## Audit Workflow
 

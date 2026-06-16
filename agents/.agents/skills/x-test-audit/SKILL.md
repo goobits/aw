@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-test-audit or /x-test-audit, asks to 
 
 # X Test Audit
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to review test coverage, placement, naming, maintainability, and
 test-suite quality for a specific target area. Optimize for confidence per line
@@ -89,6 +89,8 @@ Recommended test shape
 - Before proposing `+` new test files, fixtures, or helpers, search existing
   tests and helpers for similar behavior and prefer editing, rehoming, or
   consolidating existing coverage over creating a parallel test surface.
+- When test helpers or support files are created, moved, or renamed, apply the
+  same local file naming policy as source.
 - Add concise intent notes when useful: missing behavior test, merge duplicate,
   rename vague test, rehome browser coverage, consolidate fixture, or delete
   stale coverage.
@@ -100,19 +102,11 @@ Open questions
 - ...
 ```
 
-When reporting next steps, blockers, or order of operations, mark ownership only
-where it clarifies who acts next. Use at most one marker per actionable item;
-neutral/context lines can stay unmarked:
-
-- `🫵` only for user input, approval, secrets, credentials, business decisions, or
-  external evidence.
-- `🤖` for agent-owned implementation, verification, cleanup, docs, commits, or
-  follow-up checks.
-
-When one phase has both user-required input and agent-owned work, split it into
-A/B subphases such as `Phase 2A: 🫵 User decision` and `Phase 2B: 🤖 Agent
-work`, or label the exact `Blocked input:` line. Do not put `🫵` on a phase title
-that also contains agent file edits.
+Use ownership markers only when they clarify responsibility: `🫵` for user-owned
+input, approval, secrets, business decisions, or external evidence; `🤖` for
+agent-owned implementation, verification, cleanup, docs, commits, or follow-up
+checks. If one phase needs both, split A/B subphases or use `Blocked input:`;
+do not put `🫵` on a phase title that includes agent edits.
 
 Do not replace the phase proposal with a loose path list when implementation
 paths are known.

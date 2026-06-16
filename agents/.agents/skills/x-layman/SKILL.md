@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-layman or /x-layman, says layman, lay
 
 # X Layman
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Put the prior answer, result, plan, error, review, audit, or decision into
 layman's terms with a clean, skimmable shape. Do not default to a paragraph when

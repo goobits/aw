@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-sync-docs or /x-sync-docs, asks to sy
 
 # X Sync Docs
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to bring documentation and indexes back into alignment after code,
 architecture, proposal, or workflow changes. This is an editing skill when stale
@@ -36,6 +36,8 @@ policy files instead of repeating them here.
 - Before a skill proposes `+` new code, helpers, tests, docs, tools, or trackers,
   it should search for similar existing owners and prefer editing, rehoming, or
   consolidating them over creating parallel surfaces.
+- Skills that propose, create, move, rename, or refactor code files should call
+  out local file naming policy instead of relying on agents to remember it.
 - `.llm/docs/`: durable LLM-facing synthesis only. Update indexes/READMEs when adding or moving docs.
 - `proposals/`: human-facing proposals. Update current proposal references and
   `proposals/INDEX.md`; use `x-consolidate-docs` (`.agents/skills/x-consolidate-docs/SKILL.md`) when superseded proposal sets

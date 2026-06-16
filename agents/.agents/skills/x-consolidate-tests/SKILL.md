@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-consolidate-tests or /x-consolidate-t
 
 # X Consolidate Tests
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to actively improve test-suite shape after a test audit, proposal,
 or clear local discovery shows scattered or duplicate coverage. The goal is
@@ -35,6 +35,8 @@ In another project, use that repo's equivalent policies and commit workflow.
   proven.
 - Keep package boundaries intact: same-package tests use relative imports;
   cross-package tests use package imports.
+- When test helpers or support files are created, moved, or renamed, apply the
+  same local file naming policy as source.
 - Stop and use `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) first when ownership, behavior coverage, or deletion
   safety is unclear. When file changes are known, that proposal must use the
   canonical `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) phase format. When sequencing matters, order phases by

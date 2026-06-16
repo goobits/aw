@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-push-audit or /x-push-audit, asks whe
 
 # X Push Audit
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to answer: "Is this repo, branch, commit range, or staged slice
 safe to push?"

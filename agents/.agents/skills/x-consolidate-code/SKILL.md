@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-consolidate-code or /x-consolidate-co
 
 # X Consolidate Code
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to identify code that should be merged, deleted, rehomed,
 renamed, or simplified. This is audit/proposal-first. Do not edit files unless
@@ -50,6 +50,8 @@ repo-specific package and command details in those files instead of this skill.
   why the added code lowers future maintenance.
 - Do not preserve old APIs with compatibility wrappers unless the user explicitly
   asks for a staged migration.
+- When rehoming or renaming code files, apply the local file naming policy; do
+  not leave private classes/helpers in public-looking filenames.
 - Do not move code across ownership boundaries without naming the new owner and
   affected callers.
 - Do not delete code unless usage and coverage make the deletion safe.

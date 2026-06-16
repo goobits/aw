@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-next or /x-next, asks what is next/re
 
 # X Next
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use when the user says variants of "what's next", "what's remaining", "are you
 done", "proceed with your proposal", "proceed with next phase", "continue with
@@ -21,6 +21,8 @@ There are three modes:
   phase bullet list. Produce a `Suggested phases` proposal using the canonical
   `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) format. If file paths are not yet known, mark paths as candidates or
   make the first phase a scoped discovery/check phase instead of inventing files.
+  For code file paths, apply local file naming policy before proposing new,
+  moved, or renamed files.
   Before proposing `+` new files, helpers, or tools, do the `x-proposal` (`.agents/skills/x-proposal/SKILL.md`)
   existing-first check so suggested phases do not create duplicate surfaces.
 - Execute mode: when the user says continue, proceed, do the next phase, or
@@ -61,6 +63,8 @@ Run a phase loop with this cadence:
 
 1. Recover current state and identify the next approved phase.
 2. Implement only that phase.
+   When the phase creates, moves, or renames code files, apply the local file
+   naming policy before verification.
 3. Run the phase's targeted verification and any required audits. Do not run a
    full suite unless the user asked for it, local signoff requires it, targeted
    checks cannot cover the risk, or the phase changed a broad/shared surface.
@@ -102,18 +106,10 @@ Use that short progress format only for pure status. When recommending next
 phases, use `Suggested phases` with `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) formatting instead of bullets
 such as `Phase 7: ...`.
 
-When reporting next steps, blockers, or order of operations, mark ownership only
-where it clarifies who acts next. Use at most one marker per actionable item;
-neutral/context lines can stay unmarked:
-
-- `🫵` only for user input, approval, secrets, credentials, business decisions, or
-  external evidence.
-- `🤖` for agent-owned implementation, verification, cleanup, docs, commits, or
-  follow-up checks.
-
-When one phase has both user-required input and agent-owned work, split it into
-A/B subphases such as `Phase 2A: 🫵 User decision` and `Phase 2B: 🤖 Agent
-work`, or label the exact `Blocked input:` line. Do not put `🫵` on a phase title
-that also contains agent file edits.
+Use ownership markers only when they clarify responsibility: `🫵` for user-owned
+input, approval, secrets, business decisions, or external evidence; `🤖` for
+agent-owned implementation, verification, cleanup, docs, commits, or follow-up
+checks. If one phase needs both, split A/B subphases or use `Blocked input:`;
+do not put `🫵` on a phase title that includes agent edits.
 
 If the user asks for `tree diff`, use `x-proposal` (`.agents/skills/x-proposal/SKILL.md`).

@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-feedback-audit or /x-feedback-audit, 
 
 # X Feedback Audit
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use when the user provides outside advice, recommendations, TODO lists, review
 notes, teammate feedback, audit output, or similar external guidance and wants
@@ -82,20 +82,14 @@ sequencing matters, order phases by operations/dependencies.
 Before proposing `+` new code, helpers, tests, docs, or tools, search for
 existing equivalents and prefer editing, rehoming, or consolidating the existing
 owner over creating a parallel surface.
+When accepted or adjusted items create, move, or rename code files, apply the
+local file naming policy and call out naming fixes explicitly.
 
-When reporting next steps, blockers, or order of operations, mark ownership only
-where it clarifies who acts next. Use at most one marker per actionable item;
-neutral/context lines can stay unmarked:
-
-- `🫵` only for user input, approval, secrets, credentials, business decisions, or
-  external evidence.
-- `🤖` for agent-owned implementation, verification, cleanup, docs, commits, or
-  follow-up checks.
-
-When one phase has both user-required input and agent-owned work, split it into
-A/B subphases such as `Phase 2A: 🫵 User decision` and `Phase 2B: 🤖 Agent
-work`, or label the exact `Blocked input:` line. Do not put `🫵` on a phase title
-that also contains agent file edits.
+Use ownership markers only when they clarify responsibility: `🫵` for user-owned
+input, approval, secrets, business decisions, or external evidence; `🤖` for
+agent-owned implementation, verification, cleanup, docs, commits, or follow-up
+checks. If one phase needs both, split A/B subphases or use `Blocked input:`;
+do not put `🫵` on a phase title that includes agent edits.
 
 Do not commit from this skill. If the user explicitly asks to apply the audited
 items, use the appropriate implementation skill or workflow in a follow-up.

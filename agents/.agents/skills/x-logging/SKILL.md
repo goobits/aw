@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-logging or /x-logging, asks to design
 
 # X Logging
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to make logging structured, contextual, and useful without
 adding noise. It is based on `.llm/scratch/prompt-palette/logging.md`.
@@ -78,6 +78,7 @@ Use existing repo env names when present. Otherwise prefer:
 - Do not hide errors by downgrading them to debug logs.
 - Do not replace an established logging package without a proposal.
 - Do not add audit, metrics, or tracing systems under the name of logging.
+- When logging work creates, moves, or renames code files, apply local file naming policy.
 - Suppress or stabilize logs in tests through existing test hooks.
 
 ## Verification

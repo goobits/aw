@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-consolidate-docs or /x-consolidate-do
 
 # X Consolidate Docs
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to identify docs that should be merged, deleted, rehomed,
 renamed, or simplified so one canonical source owns each topic. This is

@@ -5,7 +5,7 @@ description: "Use when the user invokes $x-proposal or /x-proposal, asks for a T
 
 # X Proposal
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use when the user asks for "tree diff", "TLDR tree diff", "tree diff proposal", "edit/create/delete", or a compact phase proposal showing what files would be created, edited, or deleted.
 
@@ -20,9 +20,12 @@ When the user asks about coding strategy, implementation approach, tradeoffs, or
 - `Verdict`: keep one recommended approach and explain why it is the cleanest
   long-term fit.
 
-Each proposed phase must be independently stoppable: it should leave the repo in a coherent state, avoid known breakage, include its own verification step, and not depend on uncommitted follow-up work to be safe.
+Each phase must be independently stoppable: coherent repo state, no known
+breakage, its own verification, and no dependency on uncommitted follow-up work.
 
-The verification step should default to the lightest sufficient check: a typecheck, an existing test, a build, or a manual step. Only propose a new test when the change introduces behavior that no existing check covers, and treat any new test file as a `+` surface subject to the Existing-First Guard below. Do not add tests as filler verification when an existing check already proves the slice.
+Verification defaults to the lightest sufficient check: typecheck, existing
+test, build, or manual step. Propose a new test only for behavior no existing
+check covers; treat it as a `+` surface under the Existing-First Guard.
 
 When sequencing matters, phases must be ordered by operations/dependencies:
 earlier phases should unblock later phases, and verification should happen as
@@ -30,9 +33,8 @@ soon as the relevant slice can be proven.
 
 Use this compact format:
 
-Style proposals directly with shared colors. The fenced blocks are structure
-templates, not literal output. Highlight recommended options, phases, blockers,
-verification, totals, and layman's wins when useful.
+Style proposals with shared colors when useful. The fenced blocks are templates,
+not literal output.
 
 ```text
 + path/to/new-file.ts
@@ -71,17 +73,14 @@ Each phase must include a `LOC: +N / -N` line with the best current estimate.
 Use a tight range when exact counts are not knowable before implementation, such
 as `LOC: +20-40 / -10-25`.
 
-Every proposal with one or more phases must end with a `Total LOC: +N / -N`
-line immediately before `Layman's wins`. Sum the best current estimate across
-all phases. Preserve ranges when any phase uses ranges, such as
-`Total LOC: +100-180 / -20-45`.
+Every phased proposal must put `Total LOC: +N / -N` immediately before
+`Layman's wins`. Sum all phase estimates and preserve ranges.
 
 ## Existing-First Guard
 
-Before proposing work, check whether the requested behavior, helper, doc, test,
-tool, queue command, workflow, or owner already exists elsewhere. Do this even
-when the likely answer is to edit existing files, because the best proposal is
-often "reuse or consolidate this existing thing" rather than "build a new one".
+Before proposing work, search for an existing behavior, helper, doc, test, tool,
+queue command, workflow, or owner. The best proposal is often reuse,
+consolidation, or editing the current owner.
 
 - Search the codebase, docs, and tests for similar behavior, names, domain
   terms, helpers, fixtures, scripts, and owners.
@@ -101,39 +100,53 @@ often "reuse or consolidate this existing thing" rather than "build a new one".
   owner unless the proposal explicitly explains why separation is cleaner long
   term.
 
+## File Naming Guard
+
+When a proposal creates, moves, renames, or deletes code files, apply local file
+naming policy from `.agents/policies/code-standards.md` and
+`.agents.local/project.md`. In this repo: `PascalCase.ts` public/normal classes,
+`_PascalCase.ts` private/internal classes, `camelCase.ts` helpers/factories/features,
+and `_camelCase.ts` private/internal helpers.
+
+## Migration Finish Guard
+
+When a proposal introduces a replacement model, staged migration, compatibility
+path, new owner, or transitional abstraction, include a final deletion/hardening
+phase unless the user explicitly asks for a spike only.
+
+That phase removes obsolete legacy paths, compatibility wrappers, flags,
+aliases, temporary branches, stale old-behavior tests, stale comments/docs, and
+duplicate helpers or owners created during migration.
+
+For migrations intended to simplify architecture, state the final LOC goal:
+net lower, flat, or intentionally higher with a reason. Do not call the plan
+done if both the old and new models remain permanent.
+
 Keep entries specific enough to guide implementation. Avoid listing speculative files unless clearly marked as candidates. If the proposal depends on codebase discovery, inspect the relevant files first and separate confirmed changes from likely follow-ups.
 
 Prefer concise notes after the tree diff only when needed for risk, sequencing,
 order-of-ops, phase boundaries, or open questions. Do not turn the response into
 a prose design doc.
 
-When reporting next steps, blockers, or order of operations, mark ownership only
-where it clarifies who acts next. Use at most one marker per actionable item;
-neutral/context lines can stay unmarked:
-
-- `🫵` only for user input, approval, secrets, credentials, business decisions, or
-  external evidence.
-- `🤖` for agent-owned implementation, verification, cleanup, docs, commits, or
-  follow-up checks.
-
-When one phase has both user-required input and agent-owned file edits, split it
-into A/B subphases or label the exact input line. Do not put `🫵` on a phase
-title that also contains agent work, and do not put ownership emojis on `+`,
-`~`, or `-` file-change lines:
+Use ownership markers only when they clarify responsibility: `🫵` for user-owned
+input, approval, secrets, business decisions, or external evidence; `🤖` for
+agent-owned implementation, verification, cleanup, docs, commits, or follow-up
+checks. If one phase needs both, split A/B subphases or use `Blocked input:`.
+Do not put `🫵` on a phase title that includes agent work, and do not put
+ownership emojis on `+`, `~`, or `-` file-change lines:
 
 ```text
 Phase 2A: 🫵 User decision
 LOC: +0 / -0
 Verify: decision recorded
-Blocked input: final import/archive decision and production data source
+Blocked input: final production data source
 
-Phase 2B: 🤖 Agent evidence template
-LOC: +80-140 / -0
-Verify: links to import, compatibility, and activation commands are current
-+ docs/release/data-cutover-evidence.md
-~ docs/release/launch-tracker.md
+Phase 2B: 🤖 Agent edit
+LOC: +20-40 / -0
+Verify: targeted check
+~ path/to/file.md
 
-Total LOC: +80-140 / -0
+Total LOC: +20-40 / -0
 
 Layman's wins
 - ...

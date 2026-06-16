@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-do or /x-do, or says a go-ahead such 
 
 # X Do
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill as the no-friction execution command:
 
@@ -23,6 +23,8 @@ phase loop and `x-commit` (`.agents/skills/x-commit/SKILL.md`) for each verified
    use direct file inspection and leave Git state checks to the handoff owner.
 2. Identify the approved proposal, phase list, or active plan.
 3. Execute the next approved phase.
+   When the phase creates, moves, or renames code files, apply local file naming policy
+   before verification.
 4. Run that phase's targeted verification. Do not run a full suite unless the
    user asked for it, local signoff requires it, targeted checks cannot cover
    the risk, or the phase changed a broad/shared surface.

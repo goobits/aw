@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-boundary-audit or /x-boundary-audit, 
 
 # X Boundary Audit
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to check whether code lives in the right package/API place. It
 reviews dependency direction, package ownership, imports/exports, and
@@ -42,7 +42,10 @@ them:
 - Cross-package imports use package entrypoints or intentional package subpaths, never another package's `src/`.
 - Dependency direction follows stable-to-unstable rules and documented tiers.
 - Public exports are intentional, documented when required, and suitable for generated API docs.
-- Private helpers live in private-looking files (`_underscoreCamelCase.ts`) or internal folders.
+- File names follow local policy; for TypeScript, use `PascalCase.ts` for
+  public/normal classes, `_PascalCase.ts` for private/internal classes,
+  `camelCase.ts` for helpers/factories/features, and `_camelCase.ts` for
+  private/internal helpers.
 - No compatibility wrappers, global namespace shims, lazy circular-dependency workarounds, or legacy bridges unless explicitly approved.
 - Shared logic is extracted only when genuinely reusable and placed in the stable owning domain.
 - Workspace membership belongs in the local project's authoritative workspace

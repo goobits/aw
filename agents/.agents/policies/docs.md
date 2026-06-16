@@ -21,6 +21,9 @@ Before creating LLM docs, search `.llm/docs/`; update existing docs instead of
 duplicating them, and maintain `.llm/docs/INDEX.md`. Treat `.llm/docs/` as a
 maintained wiki: raw evidence stays in `scratch/`, durable synthesized truth
 goes in `docs/`, and every new durable page needs an index or README entry.
+Use the wiki as a navigation map, not an answer engine: agents should verify
+current behavioral claims against source, tests, local policy, or runbooks before
+making code changes.
 
 ## Changelog
 

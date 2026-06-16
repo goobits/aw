@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-optimize-code or /x-optimize-code, as
 
 # X Optimize Code
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill for evidence-first code optimization. The goal is to improve
 runtime, memory, IO, query, rendering, startup, or bundle performance while
@@ -64,6 +64,8 @@ Read `.agents/policies/quality.md`, `.agents/policies/code-standards.md`,
   limits when relevant.
 - Do not change public behavior unless the user explicitly approved the behavior
   change.
+- When optimization creates, moves, or renames code files, apply local file naming policy;
+  do not hide private helpers behind public-looking filenames.
 - Do not optimize by widening types, suppressing diagnostics, hiding warnings, or
   skipping tests.
 - Do not combine unrelated cleanup with optimization unless it directly removes

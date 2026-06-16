@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-docs-honesty or /x-docs-honesty, asks
 
 # X Docs Honesty
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to make documentation factual, concise, and aligned with the
 current code. It is based on the prompt palette entry

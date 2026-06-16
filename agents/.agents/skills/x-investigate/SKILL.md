@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-investigate or /x-investigate, asks h
 
 # X Investigate
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to choose the smartest way to figure something out before coding.
 It is discovery-first: decide what evidence is needed, gather only enough to make

@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-hardening-audit or /x-hardening-audit
 
 # X Hardening Audit
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use when the user wants a final cleanup audit before shipping, especially to
 confirm the slice is release-readiness cleanup only: fewer lines, clearer
@@ -27,7 +27,10 @@ Start by recovering the local context:
 
 Audit for:
 
-- Public/private boundary drift: accidental exports, package `src/` imports across boundaries, private helpers living in public-looking paths, missing package entrypoint updates, or app-specific wiring leaking into reusable packages.
+- Public/private boundary drift: accidental exports, package `src/` imports
+  across boundaries, private classes/helpers living in public-looking filenames
+  or paths, local file naming policy violations, missing package entrypoint
+  updates, or app-specific wiring leaking into reusable packages.
 - Scope creep: new product behavior, expanded feature surface, compatibility wrappers, legacy bridges, optional modes, or demo-only features not required for hardening.
 - Cruft and duplication: duplicate helpers, parallel catalogs, stale names, dead exports, unused files, repeated literals, needless adapters, or temporary terminology.
 - LOC reduction: code that can be deleted, folded into an existing helper, centralized behind an existing API, or simplified without changing behavior.
@@ -60,19 +63,11 @@ Use canonical `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) format when fi
 ◇ unrelated dirty work or broad codebase areas not audited
 ```
 
-When reporting next steps, blockers, or order of operations, mark ownership only
-where it clarifies who acts next. Use at most one marker per actionable item;
-neutral/context lines can stay unmarked:
-
-- `🫵` only for user input, approval, secrets, credentials, business decisions, or
-  external evidence.
-- `🤖` for agent-owned implementation, verification, cleanup, docs, commits, or
-  follow-up checks.
-
-When one phase has both user-required input and agent-owned work, split it into
-A/B subphases such as `Phase 2A: 🫵 User decision` and `Phase 2B: 🤖 Agent
-work`, or label the exact `Blocked input:` line. Do not put `🫵` on a phase title
-that also contains agent file edits.
+Use ownership markers only when they clarify responsibility: `🫵` for user-owned
+input, approval, secrets, business decisions, or external evidence; `🤖` for
+agent-owned implementation, verification, cleanup, docs, commits, or follow-up
+checks. If one phase needs both, split A/B subphases or use `Blocked input:`;
+do not put `🫵` on a phase title that includes agent edits.
 
 Keep findings specific and actionable. If no hardening work remains in the audited slice, say that directly and list any residual verification gaps.
 

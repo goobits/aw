@@ -29,7 +29,15 @@ package, import, and documentation overrides belong in `.agents.local/project.md
 - Prefer responsibility names over history names.
 - Avoid compatibility names like `Legacy`, `Wrapper`, `Shim`, and stale domain
   terms after a concept is renamed.
-- Keep file naming consistent with the target package/app.
+- Keep file naming consistent with the target package/app before creating,
+  moving, or renaming files.
+- For TypeScript code that follows this repo's convention:
+  - `PascalCase.ts`: public or normal classes and class-like primary objects.
+  - `_PascalCase.ts`: private/internal classes and class-like primary objects.
+  - `camelCase.ts`: factories, resolvers, helpers, adapters, utilities,
+    feature modules, and build scripts.
+  - `_camelCase.ts`: private/internal helper modules that should not read like
+    public entrypoints.
 
 ## Types And Public APIs
 

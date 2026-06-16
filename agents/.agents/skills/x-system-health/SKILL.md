@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-system-health or /x-system-health, as
 
 # X System Health
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill for local resource audits and safe process cleanup.
 

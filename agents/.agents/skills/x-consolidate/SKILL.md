@@ -5,7 +5,7 @@ description: 'Use when the user invokes $x-consolidate or /x-consolidate, asks f
 
 # X Consolidate
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill as the broad consolidation router for one package, app, server,
 feature, domain, recent slice, or explicitly named scope. It coordinates:
@@ -38,9 +38,11 @@ project-specific paths, commands, and commit rules in those files.
    `.agents.local/project.md` when present.
 3. Search for similar existing owners before proposing new code, tests, docs,
    helpers, fixtures, or trackers.
-4. Aim for a net-smaller proposal. If total LOC is positive, explicitly explain
+4. Apply local file naming policy before proposing created, moved, or renamed
+   code files, test helpers, or support files.
+5. Aim for a net-smaller proposal. If total LOC is positive, explicitly explain
    why the added LOC still reduces long-term maintenance.
-5. Treat unclear ownership, active changes, missing verification, and deletion
+6. Treat unclear ownership, active changes, missing verification, and deletion
    uncertainty as blockers, not reasons to guess.
 
 ## Workflow

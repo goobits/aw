@@ -5,13 +5,14 @@ description: 'Use when the user invokes $x-version-source or /x-version-source, 
 
 # X Version Source
 
-Use the shared colorful output vocabulary in `.agents/souls.md` for user-facing reports when it improves scanning; keep any stricter skill-specific output contract below.
+Use `.agents/souls.md` vocabulary when it improves scanning; keep stricter local output rules.
 
 Use this skill to remove version drift by making maintained manifests the source
 of truth. It is based on `.llm/scratch/prompt-palette/version.md`.
 
-Read `.agents.local/project.md`, `.agents/policies/docs.md`, and nearby package
-docs when present. Follow local package-manager and Git ownership rules.
+Read `.agents.local/project.md`, `.agents/policies/code-standards.md`,
+`.agents/policies/docs.md`, and nearby package docs when present. Follow local
+package-manager and Git ownership rules.
 
 ## Objective
 
@@ -60,6 +61,8 @@ browser/runtime baseline, protocol version, or known-version quirk.
 - Do not replace meaningful compatibility baselines with package versions.
 - Do not add fallback compatibility wrappers; update callers to the clean source
   of truth.
+- When version-source work creates, moves, or renames code files, apply local
+  file naming policy.
 - When dependency upgrades are the real task, use a dedicated package-update
   workflow instead of this skill.
 
