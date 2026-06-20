@@ -397,10 +397,9 @@ Workspace names are just file names. `aw docs` opens `config/aw/docs.tabs`.
 Default session names include the profile name, workspace name, and a stable
 fingerprint of the local checkout that owns `config/aw`, so the same workspace
 name can run concurrently from different repos or worktrees even when
-`profile.conf` has the same checked-in `root=` value. For installed profiles
-without a local `config/aw`, AW falls back to the profile root. Use
-`--session <name>` only when you intentionally want to share or resume that
-exact Zellij session.
+`profile.conf` has the same checked-in `root=` value. Installed profiles use
+the workspace name as the session name. Use `--session <name>` only when you
+intentionally want to share or resume that exact Zellij session.
 
 `aw <workspace> -r <path>` changes the cwd used for the layout, but it does not
 change the implicit session identity. Pass `-s <session>` when you intentionally
