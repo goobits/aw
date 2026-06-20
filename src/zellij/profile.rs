@@ -84,23 +84,45 @@ pub fn default_session_name(profile_name: &str, workspace: &str, root: &str) -> 
 
 pub fn default_session_name_from_profile_dir(profile_dir: &Path, workspace: &str) -> String {
     let profile_name = profile_name_from_config_dir(profile_dir);
-    let identity_root = profile_session_identity_root(profile_dir);
-    default_session_name(&profile_name, workspace, &identity_root)
-}
-
-fn profile_session_identity_root(profile_dir: &Path) -> String {
     if let Some(local_root) = local_config_owner_root(profile_dir) {
-        return path_string(&local_root);
+        return default_session_name(&profile_name, workspace, &path_string(&local_root));
     }
-
-    profile_value(
+    if is_installed_profile_dir(profile_dir) {
+        return workspace.to_string();
+    }
+    let identity_root = profile_value(
         &profile_dir.join("profile.conf"),
         "root",
         &env::current_dir()
             .ok()
             .map(|path| path_string(&path))
             .unwrap_or_else(|| "/workspace".to_string()),
-    )
+    );
+    default_session_name(&profile_name, workspace, &identity_root)
+}
+
+fn is_installed_profile_dir(profile_dir: &Path) -> bool {
+    let profile_dir = profile_dir
+        .canonicalize()
+        .unwrap_or_else(|_| profile_dir.to_path_buf());
+    if env::var_os("AW_CONFIG_DIR")
+        .map(PathBuf::from)
+        .map(|path| path.canonicalize().unwrap_or(path))
+        .is_some_and(|path| path == profile_dir)
+    {
+        return true;
+    }
+    if profile_dir
+        .parent()
+        .map(|parent| parent == aw_profiles_dir().as_path())
+        .unwrap_or(false)
+    {
+        return true;
+    }
+    env::var_os("ZELLIJ_PROFILE_DIR")
+        .map(PathBuf::from)
+        .map(|path| path.canonicalize().unwrap_or(path))
+        .is_some_and(|path| profile_dir.parent() == Some(path.as_path()))
 }
 
 fn local_config_owner_root(profile_dir: &Path) -> Option<PathBuf> {

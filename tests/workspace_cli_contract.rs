@@ -123,6 +123,49 @@ fn default_sessions_are_scoped_to_local_config_owner_root() {
 }
 
 #[test]
+fn installed_aw_config_dir_uses_workspace_session_for_live_sync() {
+    let home = install_test_aw("workspace-installed-session");
+    let profile = home.root.join(".config/agent-workspace/goobits");
+    temp::write(
+        profile.join("profile.conf"),
+        "name=goobits\nroot=/workspace\ndefault_workspace=goobits\ndefault_workspaces=goobits\n",
+    );
+    temp::write(profile.join("goobits.tabs"), "sh\ndesign-evolve\nscratch\n");
+    let tabs = home.root.join("tabs.tsv");
+    temp::write(&tabs, "0\t0\ttrue\tsh\n1\t1\tfalse\tchangelog\n");
+    temp::write(tabs.with_extension("tsv.panes"), "");
+
+    let session_name = home
+        .aw_command()
+        .args(["session", "name", "goobits"])
+        .env("AW_CONFIG_DIR", &profile)
+        .output()
+        .expect("installed profile session name");
+    assert_success("installed profile session name", &session_name);
+    assert_eq!(stdout(&session_name), "goobits");
+
+    let output = home
+        .aw_command()
+        .args(["refresh", "goobits"])
+        .env("AW_CONFIG_DIR", &profile)
+        .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env("FAKE_ZELLIJ_SESSIONS", "goobits")
+        .env(
+            "FAKE_ZELLIJ_ORDER_ARGS",
+            home.root.join("installed-refresh-order.txt"),
+        )
+        .output()
+        .expect("installed profile refresh");
+    assert_success("installed profile refresh", &output);
+    assert_eq!(stdout(&output), "Converged workspace goobits.");
+    assert_order(
+        home.root.join("installed-refresh-order.txt"),
+        "goobits",
+        &["sh", "design-evolve", "scratch"],
+    );
+}
+
+#[test]
 fn workspace_assignment_rename_remove_and_validation_are_rust_contracts() {
     let home = install_test_aw("workspace-create");
     let project = home.root.join("my-site");
