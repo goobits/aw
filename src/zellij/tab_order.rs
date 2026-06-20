@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use crate::error::{AwError, Result};
 use crate::paths::{home_dir, path_string, validate_name};
-use crate::zellij::{base_name, value_to_string};
+use crate::zellij::{base_name, session_exists, value_to_string};
 
 #[derive(Clone)]
 struct DesiredTab {
@@ -53,7 +53,7 @@ pub fn live_tab_order(session: &str, specs: &[String]) -> Result<i32> {
             2,
         ));
     }
-    if !session_exists(session) {
+    if !session_exists(session)? {
         return Ok(0);
     }
     let mut tab_state = list_tabs(session)?;
@@ -446,18 +446,6 @@ fn close_status_bar_panes(session: &str, desired: &[DesiredTab]) {
             }
         }
     }
-}
-
-fn session_exists(session: &str) -> bool {
-    Command::new("zellij")
-        .args(["list-sessions", "--short", "--no-formatting"])
-        .stderr(Stdio::null())
-        .output()
-        .is_ok_and(|output| {
-            String::from_utf8_lossy(&output.stdout)
-                .lines()
-                .any(|line| line == session)
-        })
 }
 
 fn zellij(session: &str, args: &[&str]) -> Result<()> {

@@ -37,6 +37,23 @@ pub fn sync_workspace_session(
     workspace: &str,
     session_name: Option<&str>,
 ) -> Result<()> {
+    sync_workspace_session_with_missing(config_dir, workspace, session_name, false)
+}
+
+pub fn sync_live_workspace_session(
+    config_dir: &Path,
+    workspace: &str,
+    session_name: Option<&str>,
+) -> Result<()> {
+    sync_workspace_session_with_missing(config_dir, workspace, session_name, true)
+}
+
+fn sync_workspace_session_with_missing(
+    config_dir: &Path,
+    workspace: &str,
+    session_name: Option<&str>,
+    require_live_session: bool,
+) -> Result<()> {
     let tabs_file = config_dir.join(format!("{}.tabs", workspace));
     let tab_order: Vec<String> = read_tab_lines(&tabs_file)?
         .into_iter()
@@ -51,6 +68,17 @@ pub fn sync_workspace_session(
     let session = session_name
         .map(str::to_string)
         .unwrap_or_else(|| default_workspace_session_name(config_dir, workspace));
+
+    if require_live_session {
+        let live_sessions = live_session_names()?;
+        if !live_sessions.iter().any(|name| name == &session) {
+            return Err(missing_live_session_error(
+                &session,
+                workspace,
+                &live_sessions,
+            ));
+        }
+    }
 
     env::set_var("ZELLIJ_SESSION_TAB_DEFAULT_CWD", default_cwd);
     env::set_var("ZELLIJ_SESSION_TAB_ORDER_CREATE_MISSING", "1");
@@ -75,21 +103,50 @@ pub fn rename_live_workspace_session(old_session: &str, new_session: &str) -> Re
     )
 }
 
-fn session_exists(session: &str) -> Result<bool> {
+pub(crate) fn session_exists(session: &str) -> Result<bool> {
+    Ok(live_session_names()?.iter().any(|name| name == session))
+}
+
+pub(crate) fn live_session_names() -> Result<Vec<String>> {
     let output = match Command::new("zellij")
-        .args(["list-sessions"])
+        .args(["list-sessions", "--short", "--no-formatting"])
         .stderr(Stdio::null())
         .output()
     {
         Ok(output) => output,
-        Err(_) => return Ok(false),
+        Err(_) => return Ok(Vec::new()),
     };
     if !output.status.success() {
-        return Ok(false);
+        return Ok(Vec::new());
     }
     Ok(String::from_utf8_lossy(&output.stdout)
         .lines()
-        .any(|line| line.split_whitespace().next() == Some(session)))
+        .filter_map(|line| line.split_whitespace().next())
+        .map(str::to_string)
+        .collect())
+}
+
+fn missing_live_session_error(session: &str, workspace: &str, live_sessions: &[String]) -> AwError {
+    let mut message = format!(
+        "aw: target Zellij session {} is not running; live tabs were not changed.",
+        session
+    );
+    if !live_sessions.is_empty() {
+        message.push_str("\nLive sessions: ");
+        message.push_str(&live_sessions.join(", "));
+    }
+    if session != workspace && live_sessions.iter().any(|name| name == workspace) {
+        message.push_str(&format!(
+            "\nUse --session {} to sync that live session.",
+            workspace
+        ));
+    } else {
+        message.push_str(&format!(
+            "\nStart the workspace with aw {}, or pass --session <name>.",
+            workspace
+        ));
+    }
+    AwError::new(message, 1)
 }
 
 fn workspace_root(config_dir: &Path) -> String {

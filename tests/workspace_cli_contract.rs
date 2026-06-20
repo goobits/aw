@@ -2,30 +2,15 @@ mod support;
 
 use std::process::Command;
 
-use support::command::{assert_failure, assert_success, path_with, stderr, stdout, TestHome};
+use support::command::{
+    assert_failure, assert_order, assert_success, expected_session, path_with, stderr, stdout,
+    TestHome,
+};
 use support::fake_zellij;
 use support::temp::{self, read, TempDir};
 
 fn install_test_aw(name: &str) -> TestHome {
     fake_zellij::installed_home(name)
-}
-
-fn expected_session(profile: &str, workspace: &str, root: impl std::fmt::Display) -> String {
-    let root = root.to_string();
-    let mut hash = 0xcbf29ce484222325_u64;
-    for byte in root.as_bytes() {
-        hash ^= u64::from(*byte);
-        hash = hash.wrapping_mul(0x100000001b3);
-    }
-    format!("{profile}-{workspace}-{hash:016x}")
-}
-
-fn assert_order(path: impl AsRef<std::path::Path>, session: &str, tabs: &[&str]) {
-    let expected = std::iter::once(session)
-        .chain(tabs.iter().copied())
-        .collect::<Vec<_>>()
-        .join("\n");
-    assert_eq!(read(path).trim_end(), expected);
 }
 
 #[test]
@@ -380,6 +365,7 @@ fn tab_commands_infer_the_only_workspace() {
     assert_failure("removed workspace tab shorthand", &output);
     assert!(stderr(&output).contains("aw tab list [--session <name>]"));
 
+    let front_session = expected_session("project", "front", project.display());
     for (args, expected_tabs, order_file) in [
         (
             vec!["tab", "add", "search@1"],
@@ -407,6 +393,7 @@ fn tab_commands_infer_the_only_workspace() {
             .args(args)
             .current_dir(&project)
             .env("FAKE_ZELLIJ_TABS", &tabs)
+            .env("FAKE_ZELLIJ_SESSIONS", &front_session)
             .env("FAKE_ZELLIJ_ORDER_ARGS", home.root.join(order_file))
             .output()
             .expect("tab edit shorthand");
@@ -419,6 +406,7 @@ fn tab_commands_infer_the_only_workspace() {
         .args(["tab", "refresh"])
         .current_dir(&project)
         .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env("FAKE_ZELLIJ_SESSIONS", &front_session)
         .env(
             "FAKE_ZELLIJ_ORDER_ARGS",
             home.root.join("shorthand-refresh-order.txt"),
@@ -427,6 +415,46 @@ fn tab_commands_infer_the_only_workspace() {
         .expect("tab refresh shorthand");
     assert_success("tab refresh shorthand", &output);
     assert_eq!(stdout(&output), "Converged workspace front.");
+}
+
+#[test]
+fn tab_refresh_reports_missing_target_session_with_live_hint() {
+    let home = install_test_aw("workspace-tab-refresh-missing-session");
+    let project = home.root.join("project");
+    let profile = project.join("config/aw");
+    std::fs::create_dir_all(&profile).unwrap();
+    temp::write(
+        profile.join("profile.conf"),
+        &format!(
+            "name=project\nroot={}\ndefault_workspace=front\ndefault_workspaces=front\n",
+            project.display()
+        ),
+    );
+    temp::write(profile.join("front.tabs"), "tools\nkeyboard\nscratch\n");
+
+    let tabs = home.root.join("live-tabs");
+    temp::write(
+        &tabs,
+        "0\t0\tfalse\ttools\n1\t1\ttrue\tkeyboard\n2\t2\tfalse\tscratch\n",
+    );
+    temp::write(tabs.with_extension("tsv.panes"), "");
+
+    let output = home
+        .aw_command()
+        .args(["refresh", "front"])
+        .current_dir(&project)
+        .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env("FAKE_ZELLIJ_SESSIONS", "front\nother")
+        .output()
+        .expect("missing target session refresh");
+    assert_failure("missing target session refresh", &output);
+    assert!(stderr(&output).contains(&format!(
+        "target Zellij session {} is not running",
+        expected_session("project", "front", project.display())
+    )));
+    assert!(stderr(&output).contains("Live sessions: front, other"));
+    assert!(stderr(&output).contains("Use --session front"));
+    assert!(!stderr(&output).contains("Converged workspace front."));
 }
 
 #[test]
@@ -809,6 +837,7 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
         "  0 tools\n  1 components\n  2 keyboard\n* 3 skills\n  4 scratch"
     );
 
+    let front_session = expected_session("my-site", "front", project.display());
     for (args, expected_tabs, order_file) in [
         (
             vec!["front", "tab", "add", "search@1"],
@@ -836,6 +865,7 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
             .args(args)
             .current_dir(&project)
             .env("FAKE_ZELLIJ_TABS", &tabs)
+            .env("FAKE_ZELLIJ_SESSIONS", &front_session)
             .env("FAKE_ZELLIJ_ORDER_ARGS", home.root.join(order_file))
             .output()
             .expect("tab edit");
@@ -847,6 +877,7 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
         .args(["front", "tab", "refresh", "--session", "front-explicit"])
         .current_dir(&project)
         .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env("FAKE_ZELLIJ_SESSIONS", "front-explicit")
         .env(
             "FAKE_ZELLIJ_ORDER_ARGS",
             home.root.join("front-explicit-refresh-order.txt"),
@@ -865,6 +896,7 @@ fn doctor_refresh_tab_edit_scratch_and_session_commands_use_aw_surface() {
         .args(["refresh", "front"])
         .current_dir(&project)
         .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env("FAKE_ZELLIJ_SESSIONS", &front_session)
         .env(
             "FAKE_ZELLIJ_ORDER_ARGS",
             home.root.join("front-refresh-order.txt"),

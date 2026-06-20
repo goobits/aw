@@ -12,7 +12,7 @@ use crate::profile::{default_workspace_from_config, find_config_dir, install_pro
 use crate::tabs::upsert_workspace_tab_line;
 use crate::zellij::{
     default_workspace_session_name, ensure_workspace_tabs_file, send_to_commit_tab,
-    sync_workspace_session,
+    sync_live_workspace_session,
 };
 
 const COMMIT_USAGE: &str = r#"usage:
@@ -135,7 +135,7 @@ fn setup_commit_tab(args: &[String]) -> Result<()> {
     let tabs_file = ensure_workspace_tabs_file(&config_dir, &workspace)?;
     upsert_workspace_tab_line(&tabs_file, &tab_name)?;
     install_profile(&config_dir, true)?;
-    sync_workspace_session(&config_dir, &workspace, Some(&session_name))?;
+    sync_live_workspace_session(&config_dir, &workspace, Some(&session_name))?;
 
     if let Some(agent_command) = agent_command {
         if send_to_commit_tab(&tab_name, &agent_command, Some(&session_name), None)? {
@@ -173,27 +173,22 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
     let mut filtered = vec!["--title".to_string(), args[0].clone()];
     let mut index = 1;
     let mut path_count = 0;
-    let mut root_value = String::new();
+    let mut target = CommitTarget::default();
     let mut poke = false;
     let mut poke_tab = "git".to_string();
-    let mut session_name = String::new();
-    let mut workspace_name = String::new();
     let mut wait = false;
     let mut wait_timeout = String::new();
     let mut wait_poll = String::new();
 
     while index < args.len() {
+        if parse_commit_target_option(args, &mut index, &mut target, Some(&mut filtered))? {
+            continue;
+        }
         let arg = &args[index];
         match arg.as_str() {
             "--check" | "--verify" => {
                 filtered.push("--verify".to_string());
                 filtered.push(require_option_value(args, index)?.to_string());
-                index += 2;
-            }
-            "--root" | "--queue-root" => {
-                root_value = require_option_value(args, index)?.to_string();
-                filtered.push("--root".to_string());
-                filtered.push(root_value.clone());
                 index += 2;
             }
             "--summary" | "--owner" | "--must-contain" | "--must-not-contain" => {
@@ -210,16 +205,6 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
                         index += 1;
                     }
                 }
-            }
-            "--session" => {
-                session_name = require_option_value(args, index)?.to_string();
-                validate_name("session", &session_name)?;
-                index += 2;
-            }
-            "--workspace" => {
-                workspace_name = require_option_value(args, index)?.to_string();
-                validate_name("workspace", &workspace_name)?;
-                index += 2;
             }
             "--wait" => {
                 wait = true;
@@ -268,24 +253,39 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
         );
         poke_commit_tab(
             &poke_tab,
-            resolved_poke_session(&session_name, &workspace_name)?.as_deref(),
+            resolved_poke_session(&target.session_name, &target.workspace_name)?.as_deref(),
             Some(&missing),
-            root_arg(&root_value).as_deref(),
+            root_arg(&target.root_value).as_deref(),
         )?;
-    } else if !root_value.is_empty() {
+    } else if !target.root_value.is_empty() {
         println!(
             "Run `{}` to wake the git tab.",
-            poke_command(&poke_tab, &root_value, &session_name, &workspace_name)
+            poke_command(
+                &poke_tab,
+                &target.root_value,
+                &target.session_name,
+                &target.workspace_name
+            )
         );
-    } else if !session_name.is_empty() {
+    } else if !target.session_name.is_empty() {
         println!(
             "Run `{}` to wake the git tab.",
-            poke_command(&poke_tab, &root_value, &session_name, &workspace_name)
+            poke_command(
+                &poke_tab,
+                &target.root_value,
+                &target.session_name,
+                &target.workspace_name
+            )
         );
-    } else if !workspace_name.is_empty() {
+    } else if !target.workspace_name.is_empty() {
         println!(
             "Run `{}` to wake the git tab.",
-            poke_command(&poke_tab, &root_value, &session_name, &workspace_name)
+            poke_command(
+                &poke_tab,
+                &target.root_value,
+                &target.session_name,
+                &target.workspace_name
+            )
         );
     } else if poke_tab == "git" {
         println!("Run `aw commit poke` to wake the git tab.");
@@ -295,9 +295,9 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
 
     if wait {
         let mut wait_args = vec![request_id];
-        if !root_value.is_empty() {
+        if !target.root_value.is_empty() {
             wait_args.push("--root".to_string());
-            wait_args.push(root_value);
+            wait_args.push(target.root_value);
         }
         if !wait_timeout.is_empty() {
             wait_args.push("--timeout".to_string());
@@ -325,24 +325,19 @@ fn commit_request(args: &[String]) -> Result<()> {
 
 fn commit_raw_request(args: &[String]) -> Result<()> {
     let mut filtered = Vec::new();
-    let mut root_value = String::new();
+    let mut target = CommitTarget::default();
     let mut poke = false;
     let mut poke_tab = "git".to_string();
-    let mut session_name = String::new();
-    let mut workspace_name = String::new();
     let mut index = 0;
 
     while index < args.len() {
+        if parse_commit_target_option(args, &mut index, &mut target, Some(&mut filtered))? {
+            continue;
+        }
         match args[index].as_str() {
             "--check" => {
                 filtered.push("--verify".to_string());
                 filtered.push(require_option_value(args, index)?.to_string());
-                index += 2;
-            }
-            "--root" | "--queue-root" => {
-                root_value = require_option_value(args, index)?.to_string();
-                filtered.push("--root".to_string());
-                filtered.push(root_value.clone());
                 index += 2;
             }
             "--poke" => {
@@ -354,16 +349,6 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
                         index += 1;
                     }
                 }
-            }
-            "--session" => {
-                session_name = require_option_value(args, index)?.to_string();
-                validate_name("session", &session_name)?;
-                index += 2;
-            }
-            "--workspace" => {
-                workspace_name = require_option_value(args, index)?.to_string();
-                validate_name("workspace", &workspace_name)?;
-                index += 2;
             }
             other => {
                 filtered.push(other.to_string());
@@ -377,9 +362,9 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
     if poke {
         poke_commit_tab(
             &poke_tab,
-            resolved_poke_session(&session_name, &workspace_name)?.as_deref(),
+            resolved_poke_session(&target.session_name, &target.workspace_name)?.as_deref(),
             None,
-            root_arg(&root_value).as_deref(),
+            root_arg(&target.root_value).as_deref(),
         )?;
     }
     Ok(())
@@ -387,26 +372,13 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
 
 fn commit_poke(args: &[String]) -> Result<()> {
     let mut poke_tab = "git".to_string();
-    let mut root_value = String::new();
-    let mut session_name = String::new();
-    let mut workspace_name = String::new();
+    let mut target = CommitTarget::default();
     let mut index = 0;
     while index < args.len() {
+        if parse_commit_target_option(args, &mut index, &mut target, None)? {
+            continue;
+        }
         match args[index].as_str() {
-            "--root" | "--queue-root" => {
-                root_value = require_option_value(args, index)?.to_string();
-                index += 2;
-            }
-            "--session" => {
-                session_name = require_option_value(args, index)?.to_string();
-                validate_name("session", &session_name)?;
-                index += 2;
-            }
-            "--workspace" => {
-                workspace_name = require_option_value(args, index)?.to_string();
-                validate_name("workspace", &workspace_name)?;
-                index += 2;
-            }
             other if other.starts_with("--") => {
                 return Err(commit_usage(format!(
                     "aw: unknown commit poke argument {}",
@@ -425,10 +397,49 @@ fn commit_poke(args: &[String]) -> Result<()> {
 
     poke_commit_tab(
         &poke_tab,
-        resolved_poke_session(&session_name, &workspace_name)?.as_deref(),
+        resolved_poke_session(&target.session_name, &target.workspace_name)?.as_deref(),
         None,
-        root_arg(&root_value).as_deref(),
+        root_arg(&target.root_value).as_deref(),
     )
+}
+
+#[derive(Default)]
+struct CommitTarget {
+    root_value: String,
+    session_name: String,
+    workspace_name: String,
+}
+
+fn parse_commit_target_option(
+    args: &[String],
+    index: &mut usize,
+    target: &mut CommitTarget,
+    filtered: Option<&mut Vec<String>>,
+) -> Result<bool> {
+    match args[*index].as_str() {
+        "--root" | "--queue-root" => {
+            target.root_value = require_option_value(args, *index)?.to_string();
+            if let Some(filtered) = filtered {
+                filtered.push("--root".to_string());
+                filtered.push(target.root_value.clone());
+            }
+            *index += 2;
+            Ok(true)
+        }
+        "--session" => {
+            target.session_name = require_option_value(args, *index)?.to_string();
+            validate_name("session", &target.session_name)?;
+            *index += 2;
+            Ok(true)
+        }
+        "--workspace" => {
+            target.workspace_name = require_option_value(args, *index)?.to_string();
+            validate_name("workspace", &target.workspace_name)?;
+            *index += 2;
+            Ok(true)
+        }
+        _ => Ok(false),
+    }
 }
 
 fn poke_commit_tab(

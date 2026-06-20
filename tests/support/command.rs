@@ -51,6 +51,9 @@ impl TestHome {
         let mut command = Command::new(program);
         command.env("HOME", &self.home);
         command.env("PATH", path_with(&self.bin));
+        command.env_remove("AW_CONFIG_DIR");
+        command.env_remove("ZELLIJ");
+        command.env_remove("ZELLIJ_SESSION_NAME");
         command
     }
 }
@@ -61,6 +64,25 @@ pub fn path_with(bin: impl AsRef<Path>) -> String {
         bin.as_ref().display(),
         std::env::var("PATH").unwrap_or_default()
     )
+}
+
+pub fn expected_session(profile: &str, workspace: &str, root: impl std::fmt::Display) -> String {
+    let root = root.to_string();
+    let mut hash = 0xcbf29ce484222325_u64;
+    for byte in root.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100000001b3);
+    }
+    format!("{profile}-{workspace}-{hash:016x}")
+}
+
+pub fn assert_order(path: impl AsRef<Path>, session: &str, tabs: &[&str]) {
+    let expected = std::iter::once(session)
+        .chain(tabs.iter().copied())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let actual = std::fs::read_to_string(path).expect("read tab order");
+    assert_eq!(actual.trim_end(), expected);
 }
 
 pub fn assert_success(label: &str, output: &Output) {

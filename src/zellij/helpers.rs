@@ -13,7 +13,7 @@ use crate::profile::{default_session_name_from_profile_dir, install_profile, pro
 use crate::tab_order::{live_tab_order, saved_session_order, session_tab_order};
 use crate::tabs::read_tab_lines;
 use crate::watcher::watcher_command;
-use crate::zellij::{base_name, zellij_passthrough};
+use crate::zellij::{base_name, session_exists, zellij_passthrough};
 
 const HELPERS: &[&str] = &[
     "zwork",
@@ -363,37 +363,26 @@ fn new_scratch_tab_command(args: &[String]) -> Result<i32> {
 }
 
 fn workspace_init_command(args: &[String]) -> Result<i32> {
-    let mut config_dir = String::new();
-    let mut i = 0;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--config" => {
-                config_dir = args.get(i + 1).cloned().unwrap_or_default();
-                i += 2;
-            }
-            "-h" | "--help" => {
-                eprintln!("usage: zellij-workspace-init --config <profile-dir>");
-                return Ok(0);
-            }
-            other => {
-                return Err(AwError::new(
-                    format!("zellij-workspace-init: unknown argument {}\nusage: zellij-workspace-init --config <profile-dir>", other),
-                    2,
-                ));
-            }
-        }
-    }
+    let usage = "usage: zellij-workspace-init --config <profile-dir>";
+    let Some(config_dir) = parse_config_helper_args("zellij-workspace-init", usage, args)? else {
+        return Ok(0);
+    };
     if config_dir.is_empty() {
-        return Err(AwError::new(
-            "usage: zellij-workspace-init --config <profile-dir>",
-            2,
-        ));
+        return Err(AwError::new(usage, 2));
     }
     install_profile(Path::new(&config_dir), false)?;
     Ok(0)
 }
 
 fn workspace_doctor_command(args: &[String]) -> Result<i32> {
+    let usage = "usage: zellij-workspace-doctor [--config <profile-dir>]";
+    let Some(config_dir) = parse_config_helper_args("zellij-workspace-doctor", usage, args)? else {
+        return Ok(0);
+    };
+    doctor(&config_dir)
+}
+
+fn parse_config_helper_args(command: &str, usage: &str, args: &[String]) -> Result<Option<String>> {
     let mut config_dir = String::new();
     let mut i = 0;
     while i < args.len() {
@@ -403,18 +392,18 @@ fn workspace_doctor_command(args: &[String]) -> Result<i32> {
                 i += 2;
             }
             "-h" | "--help" => {
-                eprintln!("usage: zellij-workspace-doctor [--config <profile-dir>]");
-                return Ok(0);
+                eprintln!("{usage}");
+                return Ok(None);
             }
             other => {
                 return Err(AwError::new(
-                    format!("zellij-workspace-doctor: unknown argument {}\nusage: zellij-workspace-doctor [--config <profile-dir>]", other),
+                    format!("{command}: unknown argument {other}\n{usage}"),
                     2,
                 ));
             }
         }
     }
-    doctor(&config_dir)
+    Ok(Some(config_dir))
 }
 
 fn doctor(config_dir: &str) -> Result<i32> {
@@ -675,18 +664,6 @@ fn resolve_profile_dir(profile_name: &str) -> Result<PathBuf> {
         format!("zwork: missing profile {}", profile_name),
         1,
     ))
-}
-
-fn session_exists(session: &str) -> Result<bool> {
-    let output = Command::new("zellij")
-        .args(["list-sessions", "--short", "--no-formatting"])
-        .stderr(Stdio::null())
-        .output();
-    Ok(output.is_ok_and(|output| {
-        String::from_utf8_lossy(&output.stdout)
-            .lines()
-            .any(|line| line == session)
-    }))
 }
 
 fn repair_saved_session_shells(session: &str) -> Result<()> {

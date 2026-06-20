@@ -29,7 +29,7 @@ use crate::workspace_tasks;
 use crate::zellij::{
     count_tabs_files, default_workspace_session_name, ensure_workspace_tabs_file,
     list_workspace_tabs, rename_live_workspace_session, rename_live_workspace_tab, run_helper,
-    sync_workspace_session, zellij_passthrough,
+    sync_live_workspace_session, sync_workspace_session, zellij_passthrough,
 };
 
 pub const USAGE: &str = r#"🌀 aw: Zero-friction Zellij workspaces
@@ -713,7 +713,7 @@ fn run_workspace_tab_command(
                 )));
             }
             install_profile(&config_dir, true)?;
-            sync_workspace_session(&config_dir, workspace, Some(&session_name))?;
+            sync_live_workspace_session(&config_dir, workspace, Some(&session_name))?;
             println!("Converged workspace {}.", workspace);
         }
         "add" => {
@@ -725,7 +725,7 @@ fn run_workspace_tab_command(
             })?;
             let indexed = upsert_workspace_tab_line(&tabs_file, spec)?;
             install_profile(&config_dir, true)?;
-            sync_workspace_session(&config_dir, workspace, Some(&session_name))?;
+            sync_live_workspace_session(&config_dir, workspace, Some(&session_name))?;
             println!("Added tab {} to {}.", indexed.name, workspace);
         }
         "remove" => {
@@ -737,7 +737,7 @@ fn run_workspace_tab_command(
             })?;
             remove_workspace_tab_line(&tabs_file, tab)?;
             install_profile(&config_dir, true)?;
-            sync_workspace_session(&config_dir, workspace, Some(&session_name))?;
+            sync_live_workspace_session(&config_dir, workspace, Some(&session_name))?;
             println!("Removed tab {} from {}.", tab, workspace);
         }
         "move" => {
@@ -759,7 +759,7 @@ fn run_workspace_tab_command(
             };
             upsert_workspace_tab_line(&tabs_file, spec)?;
             install_profile(&config_dir, true)?;
-            sync_workspace_session(&config_dir, workspace, Some(&session_name))?;
+            sync_live_workspace_session(&config_dir, workspace, Some(&session_name))?;
             println!("Moved tab {} to {}@{}.", indexed.name, workspace, index);
         }
         "rename" => {
@@ -774,7 +774,7 @@ fn run_workspace_tab_command(
             rename_live_workspace_tab(&session_name, &args[0], &indexed.name)?;
             rename_workspace_tab_line_from_spec(&tabs_file, &args[0], &args[1])?;
             install_profile(&config_dir, true)?;
-            sync_workspace_session(&config_dir, workspace, Some(&session_name))?;
+            sync_live_workspace_session(&config_dir, workspace, Some(&session_name))?;
             match indexed.index {
                 Some(index) => println!(
                     "Renamed tab {} to {} and moved it to index {} in {}.",

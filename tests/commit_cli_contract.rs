@@ -1,6 +1,8 @@
 mod support;
 
-use support::command::{assert_failure, assert_success, stdout, TestHome};
+use support::command::{
+    assert_failure, assert_order, assert_success, expected_session, stdout, TestHome,
+};
 use support::fake_zellij;
 use support::temp::{self, read};
 
@@ -12,23 +14,6 @@ fn installed_home(name: &str) -> TestHome {
     );
     temp::make_executable(home.bin.join("sleep"));
     home
-}
-
-fn expected_session(profile: &str, workspace: &str, root: &str) -> String {
-    let mut hash = 0xcbf29ce484222325_u64;
-    for byte in root.as_bytes() {
-        hash ^= u64::from(*byte);
-        hash = hash.wrapping_mul(0x100000001b3);
-    }
-    format!("{profile}-{workspace}-{hash:016x}")
-}
-
-fn assert_order(path: impl AsRef<std::path::Path>, session: &str, tabs: &[&str]) {
-    let expected = std::iter::once(session)
-        .chain(tabs.iter().copied())
-        .collect::<Vec<_>>()
-        .join("\n");
-    assert_eq!(read(path).trim_end(), expected);
 }
 
 fn assert_captured_sessions(path: impl AsRef<std::path::Path>, expected: &str) {
@@ -413,6 +398,8 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
             "FAKE_ZELLIJ_SESSION_NAMES",
             home.root.join("session-names.txt"),
         )
+        .env_remove("ZELLIJ")
+        .env_remove("ZELLIJ_SESSION_NAME")
         .current_dir(&project)
         .output()
         .expect("commit poke");
@@ -439,6 +426,7 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
         .aw_command()
         .args(["commit", "setup", "front"])
         .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env("FAKE_ZELLIJ_SESSIONS", &front_session)
         .env(
             "FAKE_ZELLIJ_ORDER_ARGS",
             home.root.join("front-commit-setup-order.txt"),
@@ -495,6 +483,7 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
         .aw_command()
         .args(["commit", "setup", "front", "--session", "sketch-api"])
         .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env("FAKE_ZELLIJ_SESSIONS", "sketch-api")
         .env(
             "FAKE_ZELLIJ_ORDER_ARGS",
             home.root.join("front-commit-setup-order.txt"),
@@ -539,6 +528,7 @@ fn commit_poke_and_setup_target_git_tab_without_switching_active_tab() {
             "--no-agent",
         ])
         .env("FAKE_ZELLIJ_TABS", &tabs)
+        .env("FAKE_ZELLIJ_SESSIONS", "sketch-api")
         .env(
             "FAKE_ZELLIJ_ORDER_ARGS",
             home.root.join("front-commit-setup-order.txt"),

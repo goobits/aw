@@ -379,17 +379,8 @@ is installed. The stock Zellij tab bar remains the default.
 tab_bar=aw
 ```
 
-Build the plugin before `aw install` when you want installer-managed placement:
-
-```bash
-rustup target add wasm32-wasip1
-cargo build --release --manifest-path infra/aw/plugins/aw-tab-bar/Cargo.toml --target wasm32-wasip1
-aw install
-```
-
-Set `AW_TAB_BAR_WASM_SOURCE=/path/to/aw-tab-bar.wasm` before `aw install` to
-copy a non-default build artifact. Set `AW_TAB_BAR_PLUGIN_PATH=/path/to/aw-tab-bar.wasm`
-when rendering layouts against an explicit plugin path.
+For build, install, smoke-check, and remaining-work notes, see
+`plugins/aw-tab-bar/README.md`.
 
 `*.tabs` files list tabs in order. Add a tab-specific working directory after a
 tab character:

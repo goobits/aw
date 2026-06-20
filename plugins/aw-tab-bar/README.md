@@ -71,3 +71,29 @@ env -u ZELLIJ -u ZELLIJ_SESSION_NAME SHELL=/bin/sh zellij --session aw-tab-bar-s
 
 Then verify the first row renders tabs, double-clicking a tab enters inline
 rename, and dragging a tab runs the AW move path.
+
+## Status
+
+`tab_bar=aw` profile support renders this plugin when the WASM file is
+installed. `aw install` copies `aw-tab-bar.wasm` into the Agent Workspace plugin
+path and writes Zellij permission grants. Unit tests cover basic double-click
+rename state and drag command generation.
+
+Existing Zellij sessions may still use the built-in `zellij:tab-bar` until they
+are relaunched with an AW tab-bar layout.
+
+Remaining work:
+
+- make normal AW tab sync non-destructive for tab move and rename
+- add an explicit close-extra-tabs mode if strict cleanup remains useful
+- prefer native Zellij plugin APIs for live rename where possible
+- warn when `tab_bar=aw` is configured but the attached session is stale
+- smoke test a fresh session for AW tab row rendering, inline rename, and drag reorder
+
+Useful checks:
+
+```sh
+cargo test --manifest-path ../../Cargo.toml --test tab_order_contract --test workspace_cli_contract
+cargo test --manifest-path ../../Cargo.toml --test launch_contract --test layout_contract --test install_contract
+CARGO_TARGET_DIR=/tmp/aw-tab-bar-host-test cargo test --manifest-path Cargo.toml
+```
