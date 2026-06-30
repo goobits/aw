@@ -91,7 +91,7 @@ Short version
 | Item | Meaning |
 |---|---|
 | `x-do` (`.agents/skills/x-do/SKILL.md`) | Do all approved phases |
-| `x-next` (`.agents/skills/x-next/SKILL.md`) | Show what remains or the next suggested phases |
+| `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) | Show suggested phases before implementation |
 ```
 
 ```text

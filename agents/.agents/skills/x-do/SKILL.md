@@ -13,8 +13,8 @@ Run every approved phase until done. Verify each phase and either commit it as
 the commit owner or hand it to the commit owner from a worker tab. Do not ask
 again. Do not expand scope. Stop only when done or blocked.
 
-This is not a new implementation engine. Use `x-next` (`.agents/skills/x-next/SKILL.md`) execute mode for the
-phase loop and `x-commit` (`.agents/skills/x-commit/SKILL.md`) for each verified scoped commit.
+This is not a new implementation engine. Use the repo-approved implementation
+workflow for the phase loop and `x-commit` (`.agents/skills/x-commit/SKILL.md`) for each verified scoped commit.
 
 ## Behavior
 

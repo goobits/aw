@@ -130,10 +130,10 @@ Rules for the tracker:
 
 - `x-sync-docs` (`.agents/skills/x-sync-docs/SKILL.md`) handles broad doc drift;
   this skill maintains one todo tracker for a domain.
-- `x-next` (`.agents/skills/x-next/SKILL.md`) executes the tracker's next phase.
+- `x-do` (`.agents/skills/x-do/SKILL.md`) executes approved tracker phases.
   This skill orders the tracker; it does not implement tasks.
 - If the user asks for executable next phases after consolidation, use
-  `x-next` (`.agents/skills/x-next/SKILL.md`) suggested-phase mode or `x-proposal` (`.agents/skills/x-proposal/SKILL.md`). Do not present the
+  `x-proposal` (`.agents/skills/x-proposal/SKILL.md`). Do not present the
   tracker summary as an approved implementation plan.
 - `x-update-changelog` (`.agents/skills/x-update-changelog/SKILL.md`) records
   shipped history. This skill records remaining work.

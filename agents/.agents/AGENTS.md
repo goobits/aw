@@ -123,7 +123,6 @@ Actions:
 
 - `x-ascii-mockup` (`.agents/skills/x-ascii-mockup/SKILL.md`): plain-text UI/CLI/checklist/table/flow mockups.
 - `x-commit` (`.agents/skills/x-commit/SKILL.md`): scoped commits or consume next `aw commit` queue request.
-- `x-next` (`.agents/skills/x-next/SKILL.md`): next/remaining phases or approved next-phase execution.
 - `x-do` (`.agents/skills/x-do/SKILL.md`): run all approved phases until done or genuinely blocked.
 - `x-investigate` (`.agents/skills/x-investigate/SKILL.md`): choose the best evidence path before coding.
 - `x-lint-cleanup` (`.agents/skills/x-lint-cleanup/SKILL.md`): lint/type/check cleanup without hiding errors.
@@ -137,11 +136,10 @@ Actions:
 
 ## Debug Inputs
 
-When the user pastes a browser or runtime stack trace, treat it as a debug
-request. Parse the top first-party frame, read that file and line, trace upward
-to the originating call site, and fix the root cause. Do not silence errors or
-edit minified/chunk output directly; if the top frame is generated, walk back to
-the nearest maintained source frame.
+When the user pastes a browser or runtime stack trace, reports a failing test,
+broken command, broken route, runtime crash, or UI failure, treat it as a debug
+request. Trace to maintained source and fix the root cause without silencing
+errors or editing generated output.
 
 ## Shared-Folder Git
 
