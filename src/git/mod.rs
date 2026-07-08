@@ -28,13 +28,17 @@ pub fn run(args: &[String]) -> Result<i32> {
             Ok(0)
         }
         "lock-info" => print_lock_info(),
-        "status" => with_git_queue(
-            rest,
-            GitOptions {
-                isolated_index: true,
-                lockless_read: true,
-            },
-        ),
+        "status" => {
+            let mut git_args = vec!["status".to_string()];
+            git_args.extend(rest.iter().cloned());
+            with_git_queue(
+                &git_args,
+                GitOptions {
+                    isolated_index: false,
+                    lockless_read: true,
+                },
+            )
+        }
         "status-fast" => {
             let mut git_args = vec![
                 "status".to_string(),
@@ -46,7 +50,7 @@ pub fn run(args: &[String]) -> Result<i32> {
             with_git_queue(
                 &git_args,
                 GitOptions {
-                    isolated_index: true,
+                    isolated_index: false,
                     lockless_read: true,
                 },
             )

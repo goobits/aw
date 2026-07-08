@@ -48,6 +48,45 @@ fn owner_git_rejects_raw_mutations_and_allows_lockless_reads() {
 }
 
 #[test]
+fn owner_git_status_reports_full_worktree_awareness() {
+    let project = repo("owner-git-status-aware");
+    let submodule_source = repo("owner-git-status-aware-submodule");
+    let submodule_source_path = submodule_source.path().to_string_lossy().to_string();
+    git(
+        project.path(),
+        &[
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            "-q",
+            &submodule_source_path,
+            "nested",
+        ],
+    );
+    git(project.path(), &["add", ".gitmodules", "nested"]);
+    git(
+        project.path(),
+        &["commit", "-q", "-m", "add nested submodule"],
+    );
+
+    temp::write(project.join("owned.txt"), "updated\n");
+    temp::write(project.join("untracked.txt"), "new\n");
+    temp::write(project.join("nested/owned.txt"), "nested update\n");
+
+    let status = Command::new(support::command::aw())
+        .args(["owner", "git", "status", "--short"])
+        .current_dir(project.path())
+        .output()
+        .expect("status");
+    assert_success("status", &status);
+    let output = stdout(&status);
+    assert!(output.contains(" M owned.txt"), "{output}");
+    assert!(output.contains("?? untracked.txt"), "{output}");
+    assert!(output.contains("nested"), "{output}");
+}
+
+#[test]
 fn owner_git_commit_owned_commits_only_requested_paths() {
     let repo = repo("owner-git-commit-owned");
     temp::write(repo.join("owned.txt"), "updated\n");

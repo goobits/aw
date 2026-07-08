@@ -84,7 +84,6 @@ pub fn is_lockless_read_allowed(git_args: &[String], invocation: &GitInvocation)
         || invocation.command == "config" && is_read_only_config(git_args, invocation)
         || invocation.command == "diff" && has_pathspec_after_separator(git_args)
         || invocation.command == "status"
-            && (is_fast_status(git_args) || has_pathspec_after_separator(git_args))
 }
 
 pub fn uses_isolated_index(command: &str) -> bool {
@@ -185,13 +184,6 @@ fn only_allowed_options(args: &[String], allowed: &[&str]) -> bool {
     })
 }
 
-fn is_fast_status(git_args: &[String]) -> bool {
-    git_args.iter().any(|arg| arg == "--untracked-files=no")
-        && git_args
-            .iter()
-            .any(|arg| arg == "--ignore-submodules=dirty" || arg == "--ignore-submodules=all")
-}
-
 fn has_pathspec_after_separator(git_args: &[String]) -> bool {
     git_args
         .iter()
@@ -235,7 +227,7 @@ fn raw_read_commands() -> BTreeSet<&'static str> {
 }
 
 fn isolated_index_commands() -> BTreeSet<&'static str> {
-    ["diff", "grep", "ls-files", "status"].into_iter().collect()
+    ["diff", "grep", "ls-files"].into_iter().collect()
 }
 
 fn global_options_with_value() -> BTreeSet<&'static str> {
