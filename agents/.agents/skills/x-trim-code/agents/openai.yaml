@@ -1,0 +1,4 @@
+interface:
+  display_name: "Trim Code"
+  short_description: "Aggressively slim scoped code surfaces"
+  default_prompt: "Use $x-trim-code to produce a LOC-negative cleanup proposal for the target while preserving behavior."
