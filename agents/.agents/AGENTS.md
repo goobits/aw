@@ -122,7 +122,7 @@ Consolidate:
 Actions:
 
 - `x-ascii-mockup` (`.agents/skills/x-ascii-mockup/SKILL.md`): plain-text UI/CLI/checklist/table/flow mockups.
-- `x-commit` (`.agents/skills/x-commit/SKILL.md`): scoped commits or consume next `aw commit` queue request.
+- `x-commit` (`.agents/skills/x-commit/SKILL.md`): scoped commits or consume the next Shelly queue request.
 - `x-do` (`.agents/skills/x-do/SKILL.md`): run all approved phases until done or genuinely blocked.
 - `x-investigate` (`.agents/skills/x-investigate/SKILL.md`): choose the best evidence path before coding.
 - `x-lint-cleanup` (`.agents/skills/x-lint-cleanup/SKILL.md`): lint/type/check cleanup without hiding errors.
