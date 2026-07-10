@@ -47,7 +47,7 @@ Call out:
 - Swap usage as a warning sign, not an immediate emergency, when available RAM is still healthy.
 - The single biggest actionable offender before listing secondary noise.
 
-When the user says Codex, Claude, Zellij, or another class is okay, exclude those from cleanup recommendations unless they are clearly orphaned and the user explicitly asks.
+When the user says Codex, Claude, or another class is okay, exclude those from cleanup recommendations unless they are clearly orphaned and the user explicitly asks.
 
 ## Playwright/Xvfb Audit
 
@@ -82,7 +82,7 @@ kill -TERM -- -<PGID>
 sleep 2
 ```
 
-Verify afterward with the Playwright/Xvfb audit command. Use `kill -KILL -- -<PGID>` only if `TERM` fails and the user asked for cleanup. Never kill unrelated Codex/Claude/Zellij process groups unless explicitly requested.
+Verify afterward with the Playwright/Xvfb audit command. Use `kill -KILL -- -<PGID>` only if `TERM` fails and the user asked for cleanup. Never kill unrelated Codex or Claude process groups unless explicitly requested.
 
 ## Response Shape
 
