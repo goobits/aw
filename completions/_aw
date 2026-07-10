@@ -1,195 +1,38 @@
 #compdef aw
 
-_aw_config_dir() {
-  if [[ -n "${AW_CONFIG_DIR:-}" && -f "$AW_CONFIG_DIR/profile.conf" ]]; then
-    printf '%s' "$AW_CONFIG_DIR"
-    return
-  fi
-
-  if [[ -f "$PWD/config/aw/profile.conf" ]]; then
-    printf '%s' "$PWD/config/aw"
-    return
-  fi
-
-  local aw_home="${AW_HOME:-$HOME/.aw}"
-  local default_profile="$aw_home/default-profile"
-  local profile_name
-  if [[ -f "$default_profile" ]]; then
-    profile_name="$(sed -n '1p' "$default_profile")"
-    printf '%s/profiles/%s' "$aw_home" "$profile_name"
-    return
-  fi
-
-}
-
-_aw_workspaces() {
-  local config_dir tabs_file
-  config_dir="$(_aw_config_dir)"
-  [[ -d "$config_dir" ]] || return
-
-  for tabs_file in "$config_dir"/*.tabs; do
-    [[ -f "$tabs_file" ]] || continue
-    compadd -- "$(basename "$tabs_file" .tabs)"
-  done
-}
-
-_aw_single_workspace() {
-  local config_dir tabs_file workspace single count
-  config_dir="$(_aw_config_dir)"
-  [[ -d "$config_dir" ]] || return
-
-  count=0
-  for tabs_file in "$config_dir"/*.tabs; do
-    [[ -f "$tabs_file" ]] || continue
-    workspace="$(basename "$tabs_file" .tabs)"
-    single="$workspace"
-    count=$((count + 1))
-  done
-  [[ "$count" -eq 1 ]] && printf '%s' "$single"
-}
-
-_aw_tabs() {
-  local workspace="$1" config_dir tabs_file line
-  config_dir="$(_aw_config_dir)"
-  tabs_file="$config_dir/$workspace.tabs"
-  [[ -f "$tabs_file" ]] || return
-
-  while IFS=$'\t' read -r line _cwd; do
-    [[ -n "$line" ]] && compadd -- "$line"
-  done < "$tabs_file"
-}
-
-_aw_complete_tab_command() {
-  local workspace="$1" action="$2" first_arg_index="$3" single_workspace
-  if [[ -z "$action" ]]; then
-    compadd -- "${tab_commands[@]}"
-    return
-  fi
-
-  if [[ "${words[$CURRENT]:-}" == --* ]]; then
-    compadd -- --session
-    return
-  fi
-
-  case "$action" in
-    list|refresh)
-      ;;
-    add|move|remove|rename)
-      if [[ -n "$workspace" ]]; then
-        [[ "$CURRENT" -eq "$first_arg_index" ]] && _aw_tabs "$workspace"
-        return
-      fi
-      single_workspace="$(_aw_single_workspace)"
-      if [[ "$CURRENT" -eq "$first_arg_index" && -n "$single_workspace" ]]; then
-        _aw_tabs "$single_workspace"
-      fi
-      ;;
-  esac
-}
-
 _aw() {
-  local -a commands tab_commands commit_commands repo_commands owner_commands
-  commands=(help install setup doctor paths repo list create refresh rename remove tab session commit owner ps kill)
-  tab_commands=(list add move rename remove refresh)
-  commit_commands=(setup request status doctor wait poke)
-  repo_commands=(doctor migrate clean measure-git probe-git-config routes worktree)
-  owner_commands=(git pkg)
+  local -a commands
+  commands=(
+    'commit:manage the shared commit-owner queue'
+    'doctor:check the local AW command and repository config'
+    'help:show help'
+    'install:install AW and repository adapters'
+    'owner:run serialized git or package commands'
+    'paths:show installed AW paths'
+    'repo:run repository maintenance'
+  )
 
-  case "${words[2]:-}" in
+  if (( CURRENT == 2 )); then
+    _describe 'command' commands
+    return
+  fi
+
+  case "$words[2]" in
     commit)
-      case "${words[3]:-}" in
-        "")
-          compadd -- "${commit_commands[@]}"
-          ;;
-        setup)
-          if [[ "$CURRENT" -eq 4 ]]; then
-            compadd -- --tab --session --agent --no-agent
-            _aw_workspaces
-          else
-            compadd -- --tab --session --agent --no-agent
-          fi
-          ;;
-        request)
-          compadd -- --check --verify --queue-root --root --summary --owner --must-contain --must-not-contain --poke --workspace --session --wait --timeout --poll
-          _files
-          ;;
-        status|doctor)
-          compadd -- --queue-root --root
-          ;;
-        wait)
-          compadd -- --queue-root --root --timeout --poll
-          ;;
-        poke)
-          compadd -- git --queue-root --root --workspace --session
-          ;;
-      esac
+      if (( CURRENT == 3 )); then
+        compadd block check doctor done help list next poke raw-request request setup status wait
+      else
+        compadd -- --check --owner --poke --poll --queue-root --root --summary --tab --timeout --verify --wait
+      fi
       ;;
-    repo)
-      case "${words[3]:-}" in
-        "")
-          compadd -- "${repo_commands[@]}"
-          ;;
-        migrate)
-          compadd -- --dry-run
-          ;;
-        clean)
-          compadd -- --delete --generated --rust-targets --nested-node-modules --all-safe --build-outputs --preprocessed
-          ;;
-        probe-git-config)
-          compadd -- --path --apply
-          ;;
-        routes)
-          compadd -- doctor --config
-          ;;
-        worktree)
-          compadd -- --branch --base --skip-deps --copy-deps
-          _files -/
-          ;;
-      esac
+    install)
+      compadd -- --dry-run --repo
       ;;
     owner)
-      case "${words[3]:-}" in
-        "")
-          compadd -- "${owner_commands[@]}"
-          ;;
-      esac
+      compadd git pkg
       ;;
-    session)
-      case "${words[3]:-}" in
-        "")
-          compadd -- name
-          ;;
-        name)
-          [[ "$CURRENT" -eq 4 ]] && _aw_workspaces
-          ;;
-      esac
-      ;;
-    tab)
-      _aw_complete_tab_command "" "${words[3]:-}" 4
-      ;;
-    refresh|remove)
-      [[ "$CURRENT" -eq 3 ]] && _aw_workspaces
-      ;;
-    rename)
-      [[ "$CURRENT" -eq 3 ]] && _aw_workspaces
-      ;;
-    doctor)
-      [[ "$CURRENT" -eq 3 ]] && compadd -- repo --config
-      ;;
-    kill)
-      [[ "$CURRENT" -eq 3 ]] && compadd -- $(zellij list-sessions -n 2>/dev/null | awk '{ print $1 }')
-      ;;
-    *)
-      if [[ "${words[3]:-}" == "tab" ]]; then
-        _aw_complete_tab_command "${words[2]}" "${words[4]:-}" 5
-      elif [[ "$CURRENT" -eq 2 ]]; then
-        compadd -- "${commands[@]}"
-        _aw_workspaces
-      elif [[ "$CURRENT" -eq 3 ]]; then
-        compadd -- tab -s --session -r --root
-      elif [[ "$CURRENT" -gt 2 ]]; then
-        compadd -- -s --session -r --root
-      fi
+    repo)
+      compadd clean doctor measure-git migrate probe-git-config routes worktree
       ;;
   esac
 }

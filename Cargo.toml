@@ -2,7 +2,7 @@
 name = "agent-workspace"
 version = "0.1.0"
 edition = "2021"
-description = "Agent Workspace CLI for portable agent adapters, Zellij workspaces, and shared commit-owner queues."
+description = "Agent Workspace CLI for portable agent adapters and shared commit-owner queues."
 license = "MIT"
 repository = "https://github.com/goobits/agent-workspace"
 readme = "README.md"

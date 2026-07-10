@@ -7,7 +7,7 @@ use support::command::{assert_success, stdout, TestHome};
 use support::temp;
 
 #[test]
-fn doctor_repo_reports_ready_adapters_and_git_tab() {
+fn doctor_repo_reports_ready_adapters_and_commit_owner_config() {
     let home = TestHome::new("repo-doctor");
     let repo = home.root.join("repo");
     write_ready_repo(&repo);
@@ -22,7 +22,7 @@ fn doctor_repo_reports_ready_adapters_and_git_tab() {
     assert_success("aw repo doctor", &output);
     let stdout = stdout(&output);
     assert!(stdout.contains("ok      .agents -> infra/aw/agents/.agents"));
-    assert!(stdout.contains("ok      lowercase git tab"));
+    assert!(stdout.contains("ok      commit_owner=enabled"));
     assert!(stdout.contains("ok      repo adapters ready"));
 }
 
@@ -42,9 +42,8 @@ fn migrate_repo_creates_current_adapters() {
     temp::write(repo.join(".agents.local/project.md"), "# project\n");
     temp::write(
         repo.join("config/aw/profile.conf"),
-        "name=demo\nroot=.\ndefault_workspace=front\n",
+        "name=demo\nroot=.\ncommit_owner=enabled\n",
     );
-    temp::write(repo.join("config/aw/front.tabs"), "app\ngit\nscratch\n");
 
     let output = home
         .command(support::command::aw())
@@ -85,8 +84,10 @@ fn write_ready_repo(repo: &Path) {
     temp::write(repo.join("infra/aw/agents/.agents/AGENTS.md"), "# shared\n");
     temp::write(repo.join("AGENTS.md"), "# root\n");
     temp::write(repo.join(".agents.local/project.md"), "# project\n");
-    temp::write(repo.join("config/aw/profile.conf"), "name=demo\n");
-    temp::write(repo.join("config/aw/front.tabs"), "app\ngit\nscratch\n");
+    temp::write(
+        repo.join("config/aw/profile.conf"),
+        "name=demo\ncommit_owner=enabled\n",
+    );
     symlink("infra/aw/agents/.agents", &repo.join(".agents"));
     symlink("AGENTS.md", &repo.join("CLAUDE.md"));
     symlink("../.agents/skills", &repo.join(".claude/skills"));

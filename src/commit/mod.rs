@@ -1,6 +1,8 @@
 pub(crate) mod queue;
 
+use std::env;
 use std::path::Path;
+use std::process::Command;
 
 use serde_json::Value;
 
@@ -8,20 +10,15 @@ use crate::commit_queue;
 use crate::error::{AwError, Result};
 use crate::help;
 use crate::paths::{shell_quote, validate_name};
-use crate::profile::{default_workspace_from_config, find_config_dir, install_profile};
-use crate::tabs::upsert_workspace_tab_line;
-use crate::zellij::{
-    default_workspace_session_name, ensure_workspace_tabs_file, send_to_commit_tab,
-    sync_live_workspace_session,
-};
+use crate::profile::{find_config_dir, profile_value};
 
 const COMMIT_USAGE: &str = r#"usage:
-  aw commit setup [workspace] [--tab git] [--session <name>] [--agent <cmd>|--no-agent]
-  aw commit request <title> <path>... [--owner <name>] [--check <cmd>] [--summary <text>] [--queue-root <path>] [--poke [tab]] [--workspace <workspace>] [--session <name>] [--wait] [--timeout 10m]
+  aw commit setup [--tab git]
+  aw commit request <title> <path>... [--owner <name>] [--check <cmd>] [--summary <text>] [--queue-root <path>] [--poke [tab]] [--wait] [--timeout 10m]
   aw commit status [--queue-root <path>]
   aw commit doctor [--queue-root <path>]
   aw commit wait <id> [--queue-root <path>] [--timeout 10m]
-  aw commit poke [tab] [--queue-root <path>] [--workspace <workspace>] [--session <name>]"#;
+  aw commit poke [tab] [--queue-root <path>]"#;
 
 pub fn run_commit_command(args: &[String]) -> Result<i32> {
     let Some((action, rest)) = args.split_first() else {
@@ -47,6 +44,10 @@ pub fn run_commit_command(args: &[String]) -> Result<i32> {
         }
         "status" => {
             let root = parse_root_only(rest, "status")?;
+            if !commit_owner_enabled()? {
+                print_disabled_commit_status();
+                return Ok(0);
+            }
             print_commit_status(root.as_deref())?;
             Ok(0)
         }
@@ -69,35 +70,13 @@ pub fn run_commit_command(args: &[String]) -> Result<i32> {
 
 fn setup_commit_tab(args: &[String]) -> Result<()> {
     let mut index = 0;
-    let mut workspace = "";
-    if let Some(first) = args.first() {
-        if !first.starts_with("--") {
-            workspace = first;
-            index = 1;
-        }
-    }
-
     let mut tab_name = "git".to_string();
-    let mut agent_command = Some("codex".to_string());
-    let mut session_name = String::new();
 
     while index < args.len() {
         match args[index].as_str() {
             "--tab" => {
                 tab_name = require_option_value(args, index)?.to_string();
                 index += 2;
-            }
-            "--agent" => {
-                agent_command = Some(require_option_value(args, index)?.to_string());
-                index += 2;
-            }
-            "--session" => {
-                session_name = require_option_value(args, index)?.to_string();
-                index += 2;
-            }
-            "--no-agent" => {
-                agent_command = None;
-                index += 1;
             }
             other => {
                 return Err(commit_usage(format!(
@@ -109,61 +88,16 @@ fn setup_commit_tab(args: &[String]) -> Result<()> {
     }
 
     validate_name("tab", &tab_name)?;
-    let Some(config_dir) = find_config_dir() else {
-        return Err(AwError::new(
-            "aw: could not find config/aw; create a workspace first",
-            1,
-        ));
-    };
-
-    let workspace = if workspace.is_empty() {
-        default_workspace_from_config(&config_dir)
-    } else {
-        workspace.to_string()
-    };
-    if workspace.is_empty() {
-        return Err(AwError::new(
-            "aw: no default workspace configured; pass a workspace name",
-            1,
-        ));
+    if !commit_owner_enabled()? {
+        println!("Commit owner is disabled.");
+        return Ok(());
     }
-    validate_name("workspace", &workspace)?;
-    if session_name.is_empty() {
-        session_name = default_workspace_session_name(&config_dir, &workspace);
-    }
-
-    let tabs_file = ensure_workspace_tabs_file(&config_dir, &workspace)?;
-    upsert_workspace_tab_line(&tabs_file, &tab_name)?;
-    install_profile(&config_dir, true)?;
-    sync_live_workspace_session(&config_dir, &workspace, Some(&session_name))?;
-
-    if let Some(agent_command) = agent_command {
-        if send_to_commit_tab(&tab_name, &agent_command, Some(&session_name), None)? {
-            println!(
-                "Commit tab {} is ready in {} and received `{}`.",
-                tab_name, session_name, agent_command
-            );
-        } else {
-            println!(
-                "Commit tab {} is ready in {}, but no live tab was found to start `{}`.",
-                tab_name, session_name, agent_command
-            );
-            if tab_name == "git" {
-                println!("Open the workspace, then run `aw commit poke`.");
-            } else {
-                println!(
-                    "Open the workspace, then run `aw commit poke {}`.",
-                    tab_name
-                );
-            }
-        }
-    } else {
-        println!("Commit tab {} is ready in {}.", tab_name, session_name);
-    }
+    poke_commit_tab(&tab_name, None, true)?;
     Ok(())
 }
 
 fn commit_request_from_title(args: &[String]) -> Result<()> {
+    require_commit_owner_enabled()?;
     if args.len() < 2 {
         return Err(commit_usage(
             "aw: commit request requires a title and at least one path",
@@ -247,45 +181,11 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
     println!("Created commit request {}.", request_id);
 
     if poke {
-        let missing = format!(
-            "Created commit request {}. No live Zellij tab named {} was found to poke.",
-            request_id, poke_tab
-        );
-        poke_commit_tab(
-            &poke_tab,
-            resolved_poke_session(&target.session_name, &target.workspace_name)?.as_deref(),
-            Some(&missing),
-            root_arg(&target.root_value).as_deref(),
-        )?;
+        poke_commit_tab(&poke_tab, root_arg(&target.root_value).as_deref(), false)?;
     } else if !target.root_value.is_empty() {
         println!(
-            "Run `{}` to wake the git tab.",
-            poke_command(
-                &poke_tab,
-                &target.root_value,
-                &target.session_name,
-                &target.workspace_name
-            )
-        );
-    } else if !target.session_name.is_empty() {
-        println!(
-            "Run `{}` to wake the git tab.",
-            poke_command(
-                &poke_tab,
-                &target.root_value,
-                &target.session_name,
-                &target.workspace_name
-            )
-        );
-    } else if !target.workspace_name.is_empty() {
-        println!(
-            "Run `{}` to wake the git tab.",
-            poke_command(
-                &poke_tab,
-                &target.root_value,
-                &target.session_name,
-                &target.workspace_name
-            )
+            "Run `aw commit poke --queue-root {}` to wake the git tab.",
+            shell_quote(&target.root_value)
         );
     } else if poke_tab == "git" {
         println!("Run `aw commit poke` to wake the git tab.");
@@ -317,6 +217,7 @@ fn commit_request_from_title(args: &[String]) -> Result<()> {
 }
 
 fn commit_request(args: &[String]) -> Result<()> {
+    require_commit_owner_enabled()?;
     if args.first().is_some_and(|arg| arg.starts_with("--")) {
         return commit_raw_request(args);
     }
@@ -324,6 +225,7 @@ fn commit_request(args: &[String]) -> Result<()> {
 }
 
 fn commit_raw_request(args: &[String]) -> Result<()> {
+    require_commit_owner_enabled()?;
     let mut filtered = Vec::new();
     let mut target = CommitTarget::default();
     let mut poke = false;
@@ -360,17 +262,13 @@ fn commit_raw_request(args: &[String]) -> Result<()> {
     let output = commit_queue::capture("request", &filtered)?;
     print!("{}", output);
     if poke {
-        poke_commit_tab(
-            &poke_tab,
-            resolved_poke_session(&target.session_name, &target.workspace_name)?.as_deref(),
-            None,
-            root_arg(&target.root_value).as_deref(),
-        )?;
+        poke_commit_tab(&poke_tab, root_arg(&target.root_value).as_deref(), false)?;
     }
     Ok(())
 }
 
 fn commit_poke(args: &[String]) -> Result<()> {
+    require_commit_owner_enabled()?;
     let mut poke_tab = "git".to_string();
     let mut target = CommitTarget::default();
     let mut index = 0;
@@ -395,19 +293,12 @@ fn commit_poke(args: &[String]) -> Result<()> {
         }
     }
 
-    poke_commit_tab(
-        &poke_tab,
-        resolved_poke_session(&target.session_name, &target.workspace_name)?.as_deref(),
-        None,
-        root_arg(&target.root_value).as_deref(),
-    )
+    poke_commit_tab(&poke_tab, root_arg(&target.root_value).as_deref(), true)
 }
 
 #[derive(Default)]
 struct CommitTarget {
     root_value: String,
-    session_name: String,
-    workspace_name: String,
 }
 
 fn parse_commit_target_option(
@@ -426,28 +317,22 @@ fn parse_commit_target_option(
             *index += 2;
             Ok(true)
         }
-        "--session" => {
-            target.session_name = require_option_value(args, *index)?.to_string();
-            validate_name("session", &target.session_name)?;
-            *index += 2;
-            Ok(true)
-        }
-        "--workspace" => {
-            target.workspace_name = require_option_value(args, *index)?.to_string();
-            validate_name("workspace", &target.workspace_name)?;
-            *index += 2;
-            Ok(true)
-        }
         _ => Ok(false),
     }
 }
 
 fn poke_commit_tab(
     requested_name: &str,
-    session: Option<&str>,
-    missing_message: Option<&str>,
     root_value: Option<&str>,
+    require_reached: bool,
 ) -> Result<()> {
+    validate_name("tab", requested_name)?;
+    if requested_name != "git" {
+        return Err(AwError::new(
+            "aw: Shelly commit owner uses the stable git launch id",
+            2,
+        ));
+    }
     let mut message = "$x-commit next".to_string();
     if let Some(root_value) = root_value {
         if !root_value.is_empty() {
@@ -456,57 +341,62 @@ fn poke_commit_tab(
         }
     }
 
-    if send_to_commit_tab(requested_name, &message, session, missing_message)? {
+    if send_to_commit_owner(&message)? {
         println!("Poked {} with {}.", requested_name, message);
+    } else if require_reached {
+        return Err(AwError::new("aw: Shelly commit owner was not reached", 1));
+    } else {
+        println!("Commit request is queued, but the Shelly commit owner was not reached.");
     }
     Ok(())
 }
 
-fn resolved_poke_session(
-    explicit_session: &str,
-    explicit_workspace: &str,
-) -> Result<Option<String>> {
-    if !explicit_session.is_empty() {
-        return Ok(Some(explicit_session.to_string()));
-    }
-
-    let Some(config_dir) = find_config_dir() else {
-        return Ok(None);
+fn send_to_commit_owner(message: &str) -> Result<bool> {
+    let Some(program) = env::var_os("AW_COMMIT_POKE_PROGRAM") else {
+        return Ok(false);
     };
-    let workspace = if explicit_workspace.is_empty() {
-        default_workspace_from_config(&config_dir)
-    } else {
-        explicit_workspace.to_string()
-    };
-    if workspace.is_empty() {
-        return Ok(None);
+    let mut command = Command::new(program);
+    if let Some(arg) = env::var_os("AW_COMMIT_POKE_ARG") {
+        command.arg(arg);
     }
-    ensure_workspace_tabs_file(&config_dir, &workspace)?;
-    Ok(Some(default_workspace_session_name(
-        &config_dir,
-        &workspace,
-    )))
+    let status = command.arg(message).status().map_err(|error| {
+        AwError::new(format!("aw: failed to run commit owner hook: {error}"), 1)
+    })?;
+    Ok(status.success())
 }
 
-fn poke_command(tab: &str, root: &str, session: &str, workspace: &str) -> String {
-    let mut command = "aw commit poke".to_string();
-    if tab != "git" {
-        command.push(' ');
-        command.push_str(tab);
+fn require_commit_owner_enabled() -> Result<()> {
+    if commit_owner_enabled()? {
+        Ok(())
+    } else {
+        Err(AwError::new(
+            "aw: commit owner is disabled; use the direct git workflow",
+            2,
+        ))
     }
-    if !root.is_empty() {
-        command.push_str(" --queue-root ");
-        command.push_str(&shell_quote(root));
+}
+
+fn commit_owner_enabled() -> Result<bool> {
+    let value = env::var("SHELLY_COMMIT_OWNER").ok().or_else(|| {
+        find_config_dir().map(|config_dir| {
+            profile_value(&config_dir.join("profile.conf"), "commit_owner", "enabled")
+        })
+    });
+    let value = value.unwrap_or_else(|| "enabled".to_string());
+    match value.trim().to_ascii_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" | "enabled" => Ok(true),
+        "0" | "false" | "no" | "off" | "disabled" => Ok(false),
+        _ => Err(AwError::new(
+            format!("aw: invalid commit_owner setting {value}"),
+            2,
+        )),
     }
-    if !workspace.is_empty() {
-        command.push_str(" --workspace ");
-        command.push_str(&shell_quote(workspace));
-    }
-    if !session.is_empty() {
-        command.push_str(" --session ");
-        command.push_str(&shell_quote(session));
-    }
-    command
+}
+
+fn print_disabled_commit_status() {
+    println!("Commit Queue\n");
+    println!("Status   disabled");
+    println!("Next     direct git workflow");
 }
 
 fn print_commit_status(root: Option<&str>) -> Result<()> {

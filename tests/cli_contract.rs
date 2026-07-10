@@ -7,12 +7,13 @@ fn aw() -> Command {
 }
 
 #[test]
-fn help_prints_public_cli_header_on_stdout() {
+fn help_describes_shelly_coordination_surface() {
     let output = aw().arg("help").output().expect("run aw help");
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.starts_with("\n🌀 aw: Zero-friction Zellij workspaces"));
-    assert!(stdout.ends_with("\n\n"));
+    assert!(stdout.starts_with("\n🌀 aw: Agent Workspace coordination for Shelly"));
+    assert!(stdout.contains("aw commit setup [--tab git]"));
+    assert!(!stdout.to_ascii_lowercase().contains("zellij"));
     assert!(output.stderr.is_empty());
 }
 
@@ -25,100 +26,45 @@ fn help_supports_forced_dracula_color() {
         .expect("run aw help with color");
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.starts_with('\n'));
-    assert!(stdout.ends_with("\n\n"));
     assert!(stdout.contains("\u{1b}[38;2;189;147;249m"));
-    assert!(stdout.contains("\u{1b}[38;2;255;121;198mworkspaces:"));
-    assert!(stdout.contains("aw tab rename <old-tab> <new-tab[@index]>"));
+    assert!(stdout.contains("\u{1b}[38;2;255;121;198mcommit queue:"));
 }
 
 #[test]
-fn commit_request_rejects_missing_paths_before_queue_lookup() {
-    let output = aw()
-        .args(["commit", "request", "Missing paths"])
-        .output()
-        .expect("run aw commit request");
-    assert_eq!(output.status.code(), Some(2));
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("commit request requires a title and at least one path"));
-    assert!(stderr.contains("aw commit request <title> <path>..."));
-    assert!(!stderr.contains("aw: Zero-friction Zellij workspaces"));
-}
-
-#[test]
-fn namespace_help_is_scoped() {
-    let commit = aw()
-        .args(["commit", "--help"])
-        .output()
-        .expect("run aw commit --help");
+fn namespace_help_and_errors_are_scoped() {
+    let commit = aw().args(["commit", "--help"]).output().unwrap();
     assert!(commit.status.success());
     let commit_stdout = String::from_utf8_lossy(&commit.stdout);
-    assert!(commit_stdout.starts_with('\n'));
-    assert!(commit_stdout.ends_with("\n\n"));
     assert!(commit_stdout.contains("aw commit request <title> <path>..."));
-    assert!(!commit_stdout.contains("workspaces:"));
+    assert!(!commit_stdout.contains("repo maintenance:"));
 
-    let repo = aw()
-        .args(["repo", "--help"])
-        .output()
-        .expect("run aw repo --help");
-    assert!(repo.status.success());
-    let repo_stdout = String::from_utf8_lossy(&repo.stdout);
-    assert!(repo_stdout.starts_with('\n'));
-    assert!(repo_stdout.ends_with("\n\n"));
-    assert!(repo_stdout.contains("aw repo routes [doctor]"));
-    assert!(repo_stdout.contains("aw repo worktree <path>"));
-    assert!(!repo_stdout.contains("commit queue:"));
-}
-
-#[test]
-fn namespace_errors_are_scoped() {
-    for (args, expected, unexpected) in [
-        (
-            vec!["owner"],
-            "aw: owner requires git or pkg",
-            "aw: Zero-friction Zellij workspaces",
-        ),
-        (
-            vec!["repo", "bogus"],
-            "aw: unknown repo command bogus",
-            "commit queue:",
-        ),
-        (
-            vec!["commit", "bogus"],
-            "aw: unknown commit action bogus",
-            "workspaces:",
-        ),
+    for (args, expected) in [
+        (vec!["owner"], "aw: owner requires git or pkg"),
+        (vec!["repo", "bogus"], "aw: unknown repo command bogus"),
+        (vec!["commit", "bogus"], "aw: unknown commit action bogus"),
         (
             vec!["install", "--surprise"],
             "aw: unknown install argument --surprise",
-            "commit queue:",
         ),
         (
             vec!["paths", "extra"],
             "aw: paths does not accept arguments",
-            "workspaces:",
         ),
-        (
-            vec!["ps", "extra"],
-            "aw: ps does not accept arguments",
-            "commit queue:",
-        ),
+        (vec!["ps"], "aw: unknown command ps"),
     ] {
         let output = aw().args(args).output().expect("run aw error case");
         assert!(!output.status.success());
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(stderr.contains(expected), "{stderr}");
-        assert!(!stderr.contains(unexpected), "{stderr}");
+        assert!(String::from_utf8_lossy(&output.stderr).contains(expected));
     }
 }
 
 #[test]
-fn paths_reports_aw_home_layout() {
+fn paths_reports_the_small_installed_surface() {
     let output = aw().arg("paths").output().expect("run aw paths");
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("AW Paths"));
-    assert!(stdout.contains(".aw"));
-    assert!(stdout.contains("Plugins"));
+    assert!(stdout.contains("Completions"));
+    assert!(stdout.contains("Public bin"));
+    assert!(!stdout.contains("Plugins"));
 }

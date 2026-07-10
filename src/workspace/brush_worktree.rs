@@ -300,7 +300,7 @@ fn is_usable_git_repo(repo_path: &Path) -> bool {
         .output()
         .is_ok_and(|output| {
             output.status.success()
-                && PathBuf::from(String::from_utf8_lossy(&output.stdout).trim()) == repo_path
+                && Path::new(String::from_utf8_lossy(&output.stdout).trim()) == repo_path
         })
 }
 

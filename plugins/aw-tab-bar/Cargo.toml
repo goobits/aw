@@ -1,9 +1,0 @@
-[package]
-name = "aw-tab-bar"
-version = "0.1.0"
-edition = "2021"
-description = "Agent Workspace Zellij tab bar with AW-aware drag reorder and rename."
-license = "MIT"
-
-[dependencies]
-zellij-tile = "0.44.3"

@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::error::{AwError, Result};
 use crate::paths::path_string;
@@ -24,7 +24,7 @@ pub fn doctor_repo() -> Result<i32> {
     failed |= check_symlink(&root, "CLAUDE.md", "AGENTS.md");
     failed |= check_symlink(&root, ".claude/skills", "../.agents/skills");
     failed |= check_dir(&root, "config/aw");
-    failed |= check_git_tab(&root);
+    failed |= check_commit_owner_config(&root);
 
     if failed {
         println!("fail    repo adapters need attention");
@@ -108,26 +108,25 @@ fn check_symlink(root: &Path, link: &str, target: &str) -> bool {
     true
 }
 
-fn check_git_tab(root: &Path) -> bool {
-    let config_dir = root.join("config/aw");
-    let Ok(entries) = fs::read_dir(&config_dir) else {
-        println!("missing lowercase git tab");
+fn check_commit_owner_config(root: &Path) -> bool {
+    let path = root.join("config/aw/profile.conf");
+    let Ok(contents) = fs::read_to_string(&path) else {
+        println!("missing config/aw/profile.conf");
         return true;
     };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|ext| ext.to_str()) != Some("tabs") {
-            continue;
+    let value = contents
+        .lines()
+        .find_map(|line| line.strip_prefix("commit_owner="));
+    match value {
+        Some("enabled" | "disabled") => {
+            println!("ok      commit_owner={}", value.unwrap_or_default());
+            false
         }
-        if fs::read_to_string(&path)
-            .is_ok_and(|contents| contents.lines().any(|line| line.trim() == "git"))
-        {
-            println!("ok      lowercase git tab");
-            return false;
+        _ => {
+            println!("wrong   commit_owner must be enabled or disabled");
+            true
         }
     }
-    println!("missing lowercase git tab");
-    true
 }
 
 fn ensure_symlink(root: &Path, link: &str, target: &str, dry_run: bool) -> Result<()> {
@@ -160,7 +159,7 @@ fn create_symlink(root: &Path, link: &str, target: &str) -> Result<()> {
 }
 
 fn is_symlink_to(path: &Path, target: &str) -> bool {
-    fs::read_link(path).is_ok_and(|actual| actual == PathBuf::from(target))
+    fs::read_link(path).is_ok_and(|actual| actual == Path::new(target))
 }
 
 #[cfg(unix)]
