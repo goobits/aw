@@ -30,7 +30,7 @@ instead of copying them into this skill.
     - `rg "<topic|term|path>" AGENTS.md README.md proposals .llm/docs <target paths...>`
 4. Read indexes before moving docs:
     - `.llm/docs/INDEX.md` and nearby README/index files for LLM docs
-    - `proposals/INDEX.md` for human-facing proposals
+    - `proposals/INDEX.md` for the repository's complete proposal registry
 5. Decide the canonical owner before proposing deletions or moves.
 
 ## What To Consolidate

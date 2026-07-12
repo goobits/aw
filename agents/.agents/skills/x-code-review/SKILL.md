@@ -30,7 +30,7 @@ For convention-heavy reviews, load only relevant references:
 - `.llm/docs/conventions/dependency-tiers.md` or the nearest equivalent for import and package-boundary rules.
 - `.llm/docs/conventions/audit-standards.md` when the review is an audit doc or proposal.
 - Relevant package-convention docs when package exports or new package structure are in scope.
-- `.llm/docs/reference/typescript-strictness-roadmap.md` when strictness, `any`, `unknown`, or typecheck gates are in scope.
+- `proposals/core/19-typescript-strictness.md` when strictness, `any`, `unknown`, or typecheck gates are in scope.
 - `.editorconfig` and `.vscode/settings.json` when formatting/editor consistency is relevant.
 - The repo's harness-specific review command file when reviewing commits since
   the last reviewed commit or when the user asks for the repo review workflow,

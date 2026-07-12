@@ -39,7 +39,7 @@ policy files instead of repeating them here.
 - Skills that propose, create, move, rename, or refactor code files should call
   out local file naming policy instead of relying on agents to remember it.
 - `.llm/docs/`: durable LLM-facing synthesis only. Update indexes/READMEs when adding or moving docs.
-- `proposals/`: human-facing proposals. Update current proposal references and
+- `proposals/`: all proposal authority for the repository. Update current proposal references and
   `proposals/INDEX.md`; use `x-consolidate-docs` (`.agents/skills/x-consolidate-docs/SKILL.md`) when superseded proposal sets
   need merge/delete/archive decisions.
 - Doc consolidation: use `x-consolidate-docs` (`.agents/skills/x-consolidate-docs/SKILL.md`) when the primary goal is merging,

@@ -22,7 +22,7 @@ them:
 - Relevant dependency-tier docs for package dependency direction.
 - Relevant package-convention docs for package export shape and structure.
 - Relevant module-dependency docs when auditing module structure.
-- `.llm/docs/reference/typescript-strictness-roadmap.md` when boundary issues are type-surface related.
+- `proposals/core/19-typescript-strictness.md` when boundary issues are type-surface related.
 
 ## Scope Recovery
 

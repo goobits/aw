@@ -1,0 +1,5 @@
+/target
+/.llm
+/.DS_Store
+/agents/.DS_Store
+/plugins

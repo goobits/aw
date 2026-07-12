@@ -2,11 +2,25 @@
 
 ## Homes
 
-Human-facing proposals belong in `proposals/`. Keep proposals current, remove
-superseded proposal docs instead of leaving legacy copies, and update
-`proposals/INDEX.md` when proposal files change.
+All proposal authority for this repository belongs under the top-level
+`proposals/` tree. This includes product and technical proposals, RFCs, release
+plans, decision-owning roadmaps, and trackers that determine scope or priority.
+Keep every proposal discoverable through `proposals/INDEX.md`; preserve useful
+implemented, rejected, parked, or superseded proposals under
+`proposals/archive/` when their decision history still matters.
 
-All LLM-generated files go in `.llm/`:
+`.llm/docs/` may contain implementation notes, runbooks, evidence, inventories,
+and diagnostics that support an approved proposal, but those documents must not
+introduce independent scope or act as a second task owner. Completed LLM-facing
+proposal documents move to `proposals/archive/`; `.llm/docs/archive/` is only
+for completed non-proposal agent documentation.
+
+Nested repositories keep independent Git ownership. A proposal governing this
+parent repository or its product portfolio still belongs in the parent
+`proposals/` tree; repository-home checks must not rewrite or claim unrelated
+nested-repository policy.
+
+All other agent-generated support files go in `.llm/`:
 
 - scratch/debug artifacts and raw captures: `.llm/scratch/`
 - reusable LLM-facing docs: `.llm/docs/`
