@@ -24,6 +24,17 @@ Portable instructions for LLMs working in a repository that uses this shared
 - When local commands, layout, ports, or repo-specific overrides matter, read
   `.agents.local/project.md` if present.
 
+## Tool Concurrency
+
+In Code Mode, within each bounded stage, run independent,
+`functions.exec`-available tool calls concurrently in one `functions.exec` call.
+Use `await Promise.allSettled([...])` when partial results are useful, and
+inspect every result; use `await Promise.all([...])` only when any failure should
+abort the batch. Keep dependencies, waits/resumes, approvals, conflicting or
+interdependent mutations, and adaptive investigations where each result may
+change the next step sequential. Do not split otherwise batchable inspections
+across outer tool calls.
+
 ## Safety Rules
 
 Never run without explicit approval:
