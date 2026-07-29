@@ -28,7 +28,7 @@ Portable instructions for LLMs working in a repository that uses this shared
 - When local commands, layout, ports, or repo-specific overrides matter, read
   `.agents.local/project.md` if present.
 
-## Tool Execution
+## Tool Concurrency
 
 In Code Mode, within each bounded stage, run independent,
 `functions.exec`-available tool calls concurrently in one `functions.exec` call.
