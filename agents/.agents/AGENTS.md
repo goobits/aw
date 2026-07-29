@@ -18,6 +18,10 @@ Portable instructions for LLMs working in a repository that uses this shared
   or consolidating them over creating parallel surfaces.
 - Keep public/private boundaries crisp and update callers to the clean API
   instead of preserving stale surfaces.
+- Treat every subrepo and submodule as a reusable multi-app boundary. Before
+  changing one, audit ownership and downstream consumers; keep app-specific
+  routes, selectors, fixtures, configuration, and workarounds in the consuming
+  app, and add only reusable cross-app behavior to the shared repository.
 - When a policy file below is relevant, read it before acting. If a referenced
   file is missing in another project, infer conservatively from this file and
   the local repo.
