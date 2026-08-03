@@ -32,7 +32,7 @@ repo's equivalent test, quality, and code-standard policies.
 5. Read the public entrypoints, risky call paths, and existing tests before judging coverage.
 6. When the repo provides a test selector, use it as a dry-run first pass before
    recommending broad commands. In this repo, use
-   `pnpm run test:select -- --path <target>` when the right focused check is
+   `pnpm run test:select -- --changed <target>` when the right focused check is
    unclear.
 
 ## What To Audit

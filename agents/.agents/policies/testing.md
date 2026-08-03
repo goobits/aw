@@ -28,7 +28,7 @@ When a repo provides a test selector, use it as a dry-run first pass before
 choosing a broad command. In this repository, prefer:
 
 ```bash
-pnpm run test:select -- --path <changed-path>
+pnpm run test:select -- --changed <changed-path>
 ```
 
 Add `--run` only after the recommended scope is intended. Add full-suite flags
