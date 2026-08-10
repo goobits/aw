@@ -60,8 +60,8 @@ rules there.
 - Do not preserve old APIs with compatibility wrappers unless the user
   explicitly asks for a staged migration.
 - When trimming creates, moves, or renames code files, apply the local file
-  naming policy; private TypeScript classes use `_PascalCase.ts` and private
-  helpers use `_camelCase.ts` in this repo.
+  naming policy from `.agents/policies/code-standards.md` and any local project
+  override.
 - Do not rename, move, or narrow public API without naming affected callers and
   migration impact.
 - Do not move code across ownership boundaries without naming the new owner and

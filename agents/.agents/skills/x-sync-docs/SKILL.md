@@ -14,6 +14,9 @@ references are clear.
 Read `.agents/policies/docs.md`, `.agents/policies/git.md`, and
 `.agents.local/project.md` when present. Keep project-specific doc homes in those
 policy files instead of repeating them here.
+Read `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+when a structural change introduces, renames, consolidates, or retires a
+concept shared by code and docs.
 
 ## Scope Recovery
 
@@ -21,13 +24,15 @@ policy files instead of repeating them here.
 2. Use repo-approved scoped state checks from `.agents.local/project.md` when
    present: path-scoped status and diff.
 3. Search existing docs before creating new ones:
-    - `rg "<term>" AGENTS.md README.md proposals .llm/docs <target docs>`
+    - `rg "<canonical term|retired term|path>" AGENTS.md README.md proposals .llm/docs <target docs>`
     - read `.llm/docs/00-START-HERE.md`, `.llm/docs/INDEX.md`, and `.llm/docs/doc-maintenance.md` when touching `.llm/docs`.
 4. Update existing docs instead of creating parallel copies.
 
 ## What To Sync
 
-- `AGENTS.md`: repo-local skills list, workflow rules, conventions, and safety rules.
+- `AGENTS.md`: always-on project scope, safety, coordination, and lazy routing.
+- Skill inventory: use `skills/*/SKILL.md` frontmatter and harness discovery;
+  do not maintain a second prose catalog in `AGENTS.md` or README files.
 - `.agents/skills/*/SKILL.md`: keep descriptions and workflows aligned with actual use.
 - Skill proposal output: keep `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) as the canonical owner of compact
   phase/tree diff semantics. Other skills should reference the canonical
@@ -47,6 +52,10 @@ policy files instead of repeating them here.
   conflicting, or misplaced docs.
 - READMEs: package/app/server usage, commands, exported surfaces, migration notes.
 - Env examples and runbooks: config names, secrets, ports, service ownership.
+- Canonical vocabulary: keep code, schemas, errors, structured-log fields,
+  tests, and docs on the same concept name. Remove retired synonyms after a
+  completed migration and document only explicit external-boundary
+  translations.
 - Changelog: use `x-update-changelog` (`.agents/skills/x-update-changelog/SKILL.md`); do not duplicate changelog rules here.
 - Todo trackers: use `x-consolidate-todos` (`.agents/skills/x-consolidate-todos/SKILL.md`) when the primary goal is gathering
   remaining work into one ordered tracker.

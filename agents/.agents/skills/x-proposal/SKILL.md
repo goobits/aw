@@ -84,6 +84,9 @@ consolidation, or editing the current owner.
 
 - Search the codebase, docs, and tests for similar behavior, names, domain
   terms, helpers, fixtures, scripts, and owners.
+- Compare possible owners semantically, including their responsibility,
+  consumers, operation family, data shape, and observable behavior. Different
+  spelling does not prove that a proposed surface is new.
 - Prefer `~` editing, extending, rehoming, or consolidating an existing owner
   over creating a parallel surface.
 - Treat related skills, policies, scripts, tasks, docs, package exports, tests,
@@ -100,13 +103,27 @@ consolidation, or editing the current owner.
   owner unless the proposal explicitly explains why separation is cleaner long
   term.
 
+## Canonical Naming And Ownership Guard
+
+When a proposal adds or renames an abstraction, module, schema, error, log
+field, test owner, or documented concept, read
+`.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`.
+
+- Name the canonical owner and vocabulary in the proposal.
+- Apply language-idiomatic operation grammar, stable role suffixes, and fixed
+  directional terms.
+- Reject vague bucket modules and filenames that do not predict their contents.
+- Keep intentionally distinct owners only when their domain, lifecycle,
+  security, performance, or observable behavior differs materially.
+
 ## File Naming Guard
 
 When a proposal creates, moves, renames, or deletes code files, apply local file
 naming policy from `.agents/policies/code-standards.md` and
-`.agents.local/project.md`. In this repo: `PascalCase.ts` public/normal classes,
-`_PascalCase.ts` private/internal classes, `camelCase.ts` helpers/factories/features,
-and `_camelCase.ts` private/internal helpers.
+`.agents.local/project.md`. Use the shared TypeScript default unless local
+project policy explicitly overrides it.
+File syntax is not enough: each filename must also describe one owned
+responsibility precisely.
 
 ## Migration Finish Guard
 

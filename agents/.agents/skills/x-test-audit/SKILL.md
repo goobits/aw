@@ -21,6 +21,10 @@ Read `.agents/policies/testing.md`, `.agents/policies/quality.md`, and
 `.agents/policies/code-standards.md` when present. In another project, use that
 repo's equivalent test, quality, and code-standard policies.
 
+Read `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+when test names, ownership, shared contracts, fixtures, helpers, or duplicate
+coverage are in scope. Apply the canonical doctrine without copying it here.
+
 ## Scope Recovery
 
 1. Identify the target directory, module, package, app, server, feature, or recent slice.
@@ -28,12 +32,13 @@ repo's equivalent test, quality, and code-standard policies.
    present: path-scoped status, unstaged diff, and staged diff.
 3. Map nearby tests with `rg --files <target> | rg '(^|/)(__tests__|tests)/|\.test\.|\.spec\.'` and search repo-wide only for tests that exercise the target indirectly.
 4. Search for duplicate or scattered coverage by behavior/domain term, not only
-   by filename. Include nearby fixtures and test helpers in the sweep.
+   by filename. Compare observable behavior, owning layer, consumers, fixtures,
+   and setup before treating differently named tests as distinct. Include nearby
+   fixtures, oracles, labs, and test helpers in the sweep.
 5. Read the public entrypoints, risky call paths, and existing tests before judging coverage.
 6. When the repo provides a test selector, use it as a dry-run first pass before
-   recommending broad commands. In this repo, use
-   `pnpm run test:select -- --changed <target>` when the right focused check is
-   unclear.
+   recommending broad commands. Read the exact selector and execution flags
+   from `.agents.local/project.md`.
 
 ## What To Audit
 
@@ -47,16 +52,24 @@ repo's equivalent test, quality, and code-standard policies.
 - Coverage gaps: name the missing test and the behavior it should prove.
 - Coverage overlap: identify tests that prove the same behavior in multiple
   places and recommend the merge, deletion, or narrower smoke test that should
-  remain.
+  remain. When two implementations must satisfy the same observable contract,
+  consider one parameterized contract owner while keeping implementation-only
+  assertions local.
 - Test placement: tests live in the package, app, or server layer that owns the
   behavior. Same-package tests use relative imports; cross-package tests use
   package imports.
 - Test layering: Vitest, integration tests, and Playwright/browser tests are used
   at the smallest layer that can prove the behavior. Heavy browser coverage must
   justify its runtime and only cover browser-specific behavior.
-- Test naming: filenames, `describe` blocks, and test cases name the behavior and
-  current domain terms precisely. Flag vague names like `works`, stale terms, and
-  file names that hide ownership.
+- Test naming: a filename identifies its subject, owned behavior, and necessary
+  layer or backend without opening the file. A `describe` block refines that
+  contract instead of rescuing a vague filename; each case names its condition
+  and observable outcome. Flag stale terms and unqualified buckets such as
+  `api`, `common`, `helpers`, `regressions`, `parity`, or `contract` when they
+  hide ownership.
+- Name/content fit: inventory the independent behavior groups in broad test and
+  support files. Split only at stable behavior or layer boundaries, never from
+  line count alone.
 - Test maintainability: setup is concise, fixtures/helpers are owned in one clear
   place, repeated assertions are collapsed when one stronger behavior test would
   prove more with less maintenance, and helpers do not hide the contract being
@@ -82,6 +95,11 @@ Lead with findings:
 Findings
 - Severity: file:line - missing, weak, misplaced, duplicated, stale, poorly
   named, slow, brittle, or poorly layered test coverage. Risk. Recommended fix.
+
+Ownership and naming
+- Name promises | File actually contains | Keep, Rename, Split, Merge,
+  Generalize, Rehome, or Delete.
+- Behavior | Canonical test owner | Lower-layer contract or higher-layer smoke.
 
 Recommended test shape
 - When implementation paths are known, use the canonical `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) phase

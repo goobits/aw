@@ -29,8 +29,8 @@ workflow for the phase loop and `x-commit` (`.agents/skills/x-commit/SKILL.md`) 
    user asked for it, local signoff requires it, targeted checks cannot cover
    the risk, or the phase changed a broad/shared surface.
    When the repo provides a test selector and the smallest useful check is not
-   obvious, run the selector in dry-run mode first. In this repo, use
-   `pnpm run test:select -- --changed <changed-path>`.
+   obvious, run the selector in dry-run mode first. Read the exact selector and
+   execution flags from `.agents.local/project.md`.
 5. Commit the verified phase through `x-commit` (`.agents/skills/x-commit/SKILL.md`). In shared checkouts with a
    commit-owner queue, this means submitting the verified phase to the `git` tab
    instead of running the final commit from the worker tab.

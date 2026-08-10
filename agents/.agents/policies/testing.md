@@ -25,14 +25,9 @@ release/signoff requires it, targeted checks cannot cover the risk, or the
 change is broad enough that smaller checks would be misleading.
 
 When a repo provides a test selector, use it as a dry-run first pass before
-choosing a broad command. In this repository, prefer:
-
-```bash
-pnpm run test:select -- --changed <changed-path>
-```
-
-Add `--run` only after the recommended scope is intended. Add full-suite flags
-only when full regression or release signoff is explicitly required.
+choosing a broad command. Read its exact command and execution or full-suite
+flags from `.agents.local/project.md`; shared policies and skills must not
+hardcode a project's selector syntax.
 
 ## Browser And Rendering Tests
 

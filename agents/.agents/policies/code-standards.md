@@ -31,7 +31,8 @@ package, import, and documentation overrides belong in `.agents.local/project.md
   terms after a concept is renamed.
 - Keep file naming consistent with the target package/app before creating,
   moving, or renaming files.
-- For TypeScript code that follows this repo's convention:
+- Use this shared TypeScript default unless local project policy explicitly
+  overrides it:
   - `PascalCase.ts`: public or normal classes and class-like primary objects.
   - `_PascalCase.ts`: private/internal classes and class-like primary objects.
   - `camelCase.ts`: factories, resolvers, helpers, adapters, utilities,

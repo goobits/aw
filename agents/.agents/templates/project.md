@@ -39,7 +39,7 @@ Repo-specific facts for this checkout. Keep reusable agent behavior in
 - Test framework:
 - Browser/rendering test command:
 - Full regression command:
-- Targeted test guidance:
+- Targeted test selector and execution flags:
 - Known report viewers:
 
 ## Dev Server
@@ -61,8 +61,8 @@ Repo-specific facts for this checkout. Keep reusable agent behavior in
 ## Code Standards Overrides
 
 - Import rules:
-- File naming: record class/helper and public/private file naming explicitly
-  when the project has code naming conventions.
+- File naming overrides: record only deviations from the shared code-standards
+  policy.
 - Type/JSDoc expectations:
 - UI/framework conventions:
 - Security/privacy notes:

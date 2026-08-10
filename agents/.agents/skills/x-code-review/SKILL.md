@@ -27,6 +27,9 @@ For convention-heavy reviews, load only relevant references:
 
 - `GLOSSARY.md` for domain terms, acronyms, and canonical names.
 - `.llm/docs/conventions/common-patterns.md` for coding patterns.
+- `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+  when naming, semantic duplication, concept ownership, or vocabulary migration
+  is material.
 - `.llm/docs/conventions/dependency-tiers.md` or the nearest equivalent for import and package-boundary rules.
 - `.llm/docs/conventions/audit-standards.md` when the review is an audit doc or proposal.
 - Relevant package-convention docs when package exports or new package structure are in scope.
@@ -64,14 +67,19 @@ sets:
 
 - Quality: apply `.agents/policies/quality.md` when present.
 - Code standards: apply `.agents/policies/code-standards.md` when present.
-- File naming: apply local policy; in this repo, private TypeScript classes are
-  `_PascalCase.ts` and private helpers are `_camelCase.ts`.
+- File naming: apply `.agents/policies/code-standards.md` and any local project
+  override; every name must predict one owned responsibility.
 - Domain organization: code belongs with its domain language and ownership. Shared logic moves only when it is genuinely reusable.
+- Canonical concepts: use one owner and vocabulary across code, schemas, errors,
+  logs, tests, and docs. Keep translations local to external boundaries and
+  remove retired synonyms when a migration is complete.
 - Package boundaries: same-package internals use relative imports; cross-package imports use package entrypoints or intentional subpaths; never import another package's `src/`.
 - Public/private boundaries: exported package surfaces need clean names, JSDoc where required, and no accidental private helper leaks.
 - Existing-first recommendations: before recommending a new helper, module,
   package, test file, doc, or tool, check for similar existing owners and prefer
   editing, rehoming, or consolidating them over creating a parallel surface.
+  Compare responsibility, consumers, operation family, data shape, and
+  observable behavior rather than relying on names alone.
 - Strategy alternatives: when the best fix is not obvious, compare 2-3 viable
   approaches and recommend the smallest durable one. Include performance,
   boundary, testing, and migration tradeoffs only when they affect the decision.

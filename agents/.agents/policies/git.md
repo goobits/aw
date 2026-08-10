@@ -33,16 +33,9 @@ If you are not the local commit-owner and the project documents a commit handoff
 command, enqueue the verified slice through that handoff instead of treating
 unrelated staged files as a reason to abandon the work.
 
-When creating commit requests for agent-authored work, set the request owner to
-your chosen session agent name, usually with `--owner "<agent-name>"`. This is
-an identity label for human coordination; it is not a uniqueness or lock system.
-
-When creating commit requests or direct commits for agent-authored work, include
-this trailer in the request summary or commit message:
-
-```text
-Co-authored-by: Miko Meow <101564+mudcube@users.noreply.github.com>
-```
+Use the stable session identity as the request owner when the local workflow
+supports it. Local authorship, attribution, and trailer requirements belong in
+`.agents.local/project.md`.
 
 In a worker tab, "inspect staged/unstaged changes" means use only the local
 project's worker-approved inspection path. If Git state inspection is reserved
