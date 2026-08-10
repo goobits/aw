@@ -21,6 +21,10 @@ Read `.agents/policies/testing.md`, `.agents/policies/quality.md`,
 `.agents/policies/code-standards.md`, and `.agents/policies/git.md` when present.
 In another project, use that repo's equivalent policies and commit workflow.
 
+Read `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+when renaming test owners, extracting shared contracts, or consolidating
+fixtures, helpers, or semantically duplicate coverage.
+
 ## Safety Rules
 
 - Preserve or improve behavioral coverage. Do not delete a test unless equivalent
@@ -36,7 +40,8 @@ In another project, use that repo's equivalent policies and commit workflow.
 - Keep package boundaries intact: same-package tests use relative imports;
   cross-package tests use package imports.
 - When test helpers or support files are created, moved, or renamed, apply the
-  same local file naming policy as source.
+  same local file naming policy as source. Name their owned behavior or domain
+  role; do not replace one broad test file with a generic helper bucket.
 - Stop and use `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) first when ownership, behavior coverage, or deletion
   safety is unclear. When file changes are known, that proposal must use the
   canonical `x-proposal` (`.agents/skills/x-proposal/SKILL.md`) phase format. When sequencing matters, order phases by
@@ -57,11 +62,15 @@ In another project, use that repo's equivalent policies and commit workflow.
     - `rg --files <target> | rg '(^|/)(__tests__|tests)/|\.test\.|\.spec\.'`
     - Search behavior/domain terms repo-wide only when coverage may be indirect.
 4. Read the overlapping tests, their fixtures/helpers, and the public behavior
-   they prove before editing.
+   they prove before editing. Compare behavior, owning layer, consumers,
+   fixtures, and setup rather than assuming different names mean different
+   contracts.
 5. Consolidate in small batches:
     - Merge duplicate assertions into one stronger behavior test.
     - Rehome tests to the owning package/app/server layer and fix imports.
-    - Rename files, `describe` blocks, and cases to precise current domain terms.
+    - Rename each file so its subject, owned behavior, and necessary layer or
+      backend are clear without opening it. Use `describe` blocks to refine that
+      scope and cases to state conditions and observable outcomes.
     - Delete stale, shallow, brittle, or duplicate tests only after coverage is
       preserved elsewhere.
     - Consolidate copied fixtures/helpers into the clearest owning test helper
