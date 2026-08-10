@@ -16,6 +16,8 @@ Treat the proposal as something to pressure-test, not as approved implementation
 
 Read `.agents/policies/quality.md`, `.agents/policies/code-standards.md`,
 `.agents/policies/testing.md`, and `.agents.local/project.md` when present.
+Read `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+when the proposal adds, renames, consolidates, or migrates concepts or owners.
 
 Review the proposal for:
 
@@ -27,9 +29,14 @@ Review the proposal for:
 - Structural quality: it avoids compatibility wrappers, temporary bridges, legacy leftovers, circular dependencies, god modules, and broad catch-all abstractions.
 - Existing-first proof: before accepting `+` new files, helpers, abstractions,
   tests, docs, or tools, verify the proposal checked for similar existing owners
-  and chose reuse, editing, or consolidation when possible.
+  by semantics as well as spelling and chose reuse, editing, or consolidation
+  when possible.
 - File naming: created, moved, or renamed code files follow local file naming policy,
-  including private class/helper filename distinctions.
+  including private class/helper filename distinctions, and each name predicts
+  the file's owned responsibility.
+- Canonical vocabulary: one concept has one owner and term across code, schemas,
+  errors, logs, tests, and docs; migrations remove retired synonyms except for
+  explicit external-boundary translations.
 - Simplicity: it removes duplication and keeps the smallest clear design that will hold up.
 - Completeness: it updates affected callers, tests, docs, exports, and references rather than leaving split APIs or half-migrations.
 - Stoppability: each phase leaves the repo coherent, avoids known breakage, and has verification before moving on.

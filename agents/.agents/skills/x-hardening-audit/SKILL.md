@@ -17,6 +17,9 @@ This is a proposal/audit skill. Do not edit files unless the user explicitly ask
 
 Read `.agents/policies/quality.md`, `.agents/policies/code-standards.md`,
 `.agents/policies/testing.md`, and `.agents/policies/git.md` when present.
+Read `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+when the slice adds or migrates concepts, names, modules, schemas, errors, log
+fields, test owners, or docs vocabulary.
 
 Start by recovering the local context:
 
@@ -32,7 +35,10 @@ Audit for:
   or paths, local file naming policy violations, missing package entrypoint
   updates, or app-specific wiring leaking into reusable packages.
 - Scope creep: new product behavior, expanded feature surface, compatibility wrappers, legacy bridges, optional modes, or demo-only features not required for hardening.
-- Cruft and duplication: duplicate helpers, parallel catalogs, stale names, dead exports, unused files, repeated literals, needless adapters, or temporary terminology.
+- Cruft and duplication: semantically duplicate helpers or owners, parallel
+  catalogs, stale names, dead exports, unused files, repeated literals,
+  needless adapters, generic bucket modules, retired synonyms, or temporary
+  terminology left across code, schemas, errors, logs, tests, and docs.
 - LOC reduction: code that can be deleted, folded into an existing helper, centralized behind an existing API, or simplified without changing behavior.
 - Release risk near the slice: missing caller updates, stale tests, stale docs/proposals, unverified demos, migration holes, or dirty-file ownership conflicts that would make a commit unsafe.
 - Performance opportunities only when they are local, behavior-preserving, and

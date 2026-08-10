@@ -19,6 +19,9 @@ is only consolidation when it replaces a larger duplicated or scattered surface.
 Read `.agents/policies/quality.md`, `.agents/policies/code-standards.md`,
 `.agents/policies/git.md`, and `.agents.local/project.md` when present. Keep
 repo-specific package and command details in those files instead of this skill.
+Always read
+`.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`;
+its semantic comparison and canonical-vocabulary rules are core to this skill.
 
 ## Scope Recovery
 
@@ -27,8 +30,9 @@ repo-specific package and command details in those files instead of this skill.
    present: path-scoped status, unstaged diff, and staged diff.
 3. Map entrypoints, exports, callers, tests, and nearby helpers before judging
    whether code is duplicated or misplaced.
-4. Search by behavior/domain terms, not only filenames, so parallel helpers and
-   stale abstractions are visible.
+4. Search by behavior/domain terms, not only filenames. Compare data shape,
+   consumers, responsibility, role suffix, operation family, and observable
+   behavior so differently named parallel owners remain visible.
 
 ## What To Consolidate
 
@@ -38,6 +42,8 @@ repo-specific package and command details in those files instead of this skill.
 - Misplaced code that belongs in a different package, app, server, or domain.
 - Stale compatibility wrappers, legacy adapters, dead exports, unused files, or
   temporary terminology.
+- Parallel vocabulary for the same concept across code, schemas, errors, logs,
+  tests, or docs, including retired synonyms left after a migration.
 - Public/private boundary drift caused by helpers living in public-looking paths
   or private details leaking through exports.
 - Repeated call-site logic that should use an existing stable API.
@@ -52,6 +58,8 @@ repo-specific package and command details in those files instead of this skill.
   asks for a staged migration.
 - When rehoming or renaming code files, apply the local file naming policy; do
   not leave private classes/helpers in public-looking filenames.
+- Do not create or preserve generic bucket modules such as `utils`, `helpers`,
+  `common`, or `manager` when a precise domain responsibility can own the code.
 - Do not move code across ownership boundaries without naming the new owner and
   affected callers.
 - Do not delete code unless usage and coverage make the deletion safe.

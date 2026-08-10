@@ -22,6 +22,9 @@ them:
 - Relevant dependency-tier docs for package dependency direction.
 - Relevant package-convention docs for package export shape and structure.
 - Relevant module-dependency docs when auditing module structure.
+- `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+  when duplicate owners, module names, role vocabulary, or concept migration is
+  in scope.
 - `proposals/core/19-typescript-strictness.md` when boundary issues are type-surface related.
 
 ## Scope Recovery
@@ -45,9 +48,15 @@ them:
 - File names follow local policy; for TypeScript, use `PascalCase.ts` for
   public/normal classes, `_PascalCase.ts` for private/internal classes,
   `camelCase.ts` for helpers/factories/features, and `_camelCase.ts` for
-  private/internal helpers.
+  private/internal helpers. Each module name must also predict its single owned
+  responsibility; avoid generic bucket owners.
 - No compatibility wrappers, global namespace shims, lazy circular-dependency workarounds, or legacy bridges unless explicitly approved.
-- Shared logic is extracted only when genuinely reusable and placed in the stable owning domain.
+- Shared logic is extracted only when genuinely reusable and placed in the
+  stable owning domain. Semantically matching owners are duplication candidates
+  even when their names differ.
+- One concept uses one canonical owner and vocabulary across package APIs,
+  schemas, errors, logs, tests, and docs. External protocol translations remain
+  explicit at the boundary.
 - Workspace membership belongs in the local project's authoritative workspace
   manifest, not duplicated in secondary manifests.
 - App/tool wiring stays in app/tool domains, not generic utility packages.
