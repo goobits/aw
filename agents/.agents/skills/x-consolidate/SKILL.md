@@ -30,14 +30,20 @@ Read `.agents/policies/quality.md`, `.agents/policies/testing.md`,
 `.agents/policies/git.md`, and `.agents.local/project.md` when present. Keep
 project-specific paths, commands, and commit rules in those files.
 
+Read `references/canonical-naming-and-duplication.md` when naming, module
+ownership, semantic duplication, concept migration, or cross-surface vocabulary
+is material. Keep that reference as the canonical doctrine; child skills should
+link to it instead of copying its rules.
+
 ## Scope Rules
 
 1. Identify the target scope. Do not run a repo-wide consolidation unless the
    user explicitly asks for the whole repo.
 2. Take a scoped dirty-state baseline with the repo-approved Git workflow from
    `.agents.local/project.md` when present.
-3. Search for similar existing owners before proposing new code, tests, docs,
-   helpers, fixtures, or trackers.
+3. Search for semantically similar existing owners before proposing new code,
+   tests, docs, helpers, fixtures, or trackers. Compare behavior and ownership,
+   not only spelling.
 4. Apply local file naming policy before proposing created, moved, or renamed
    code files, test helpers, or support files.
 5. Aim for a net-smaller proposal. If total LOC is positive, explicitly explain
@@ -63,7 +69,7 @@ project-specific paths, commands, and commit rules in those files.
    ordered tracker exists.
 6. **Unify the plan.** Deduplicate findings across the four passes. If one
    finding spans code/tests/docs/todos, report it once with the affected
-   surfaces.
+   surfaces, canonical owner, and canonical vocabulary.
 7. **Sequence by operations.** Put prerequisites first: canonical owners,
    boundary moves, code cleanup, test consolidation, docs/todos cleanup, then
    verification and commit.
