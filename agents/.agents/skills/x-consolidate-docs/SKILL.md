@@ -19,6 +19,9 @@ set of duplicate, stale, or scattered docs.
 Read `.agents/policies/docs.md`, `.agents/policies/quality.md`, and
 `.agents/policies/git.md` when present. Keep doc-home rules in the docs policy
 instead of copying them into this skill.
+Read `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+when multiple terms may describe the same concept or docs disagree with the
+canonical code, schema, error, log, or test vocabulary.
 
 ## Scope Recovery
 
@@ -27,7 +30,7 @@ instead of copying them into this skill.
 2. Use repo-approved scoped state checks from `.agents.local/project.md` when
    present: path-scoped status, unstaged diff, and staged diff.
 3. Search before editing or creating docs:
-    - `rg "<topic|term|path>" AGENTS.md README.md proposals .llm/docs <target paths...>`
+    - `rg "<topic|canonical term|retired term|path>" AGENTS.md README.md proposals .llm/docs <target paths...>`
 4. Read indexes before moving docs:
     - `.llm/docs/INDEX.md` and nearby README/index files for LLM docs
     - `proposals/INDEX.md` for the repository's complete proposal registry
@@ -37,6 +40,8 @@ instead of copying them into this skill.
 
 - Duplicate docs that explain the same topic with overlapping or conflicting
   guidance.
+- Differently named docs or sections that describe the same semantic concept,
+  including retired vocabulary that should resolve to one canonical owner.
 - Stale docs, links, paths, screenshots, commands, or references after code,
   package, proposal, or workflow changes.
 - Misplaced docs that belong in `.llm/docs/`, `proposals/`, a package README,

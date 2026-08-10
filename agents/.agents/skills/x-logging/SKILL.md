@@ -14,6 +14,9 @@ Read `.agents.local/project.md` and nearby package docs before changing logging.
 Prefer existing logger packages, adapters, and conventions over introducing a
 new logging stack. In this repo, check `@goobits/logger` ownership before adding
 or changing shared logging behavior.
+Read `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+when adding or renaming structured fields, operations, components, errors, or
+cross-service concepts.
 
 ## Objective
 
@@ -35,7 +38,7 @@ and consistent across modules.
 
 ## Standard Context
 
-Use existing repo names when they differ. Otherwise prefer:
+Use canonical repo concept names when they exist. Otherwise prefer:
 
 - Request: `request_id`, `session_id`, `user_id`, `method`, `path`.
 - Operation: `operation`, `component`, `batch_id`, `duration_ms`.
@@ -78,6 +81,9 @@ Use existing repo env names when present. Otherwise prefer:
 - Do not hide errors by downgrading them to debug logs.
 - Do not replace an established logging package without a proposal.
 - Do not add audit, metrics, or tracing systems under the name of logging.
+- Keep operation, component, error, and structured-field vocabulary aligned
+  with the owning code and schemas. Translate only at explicit external
+  protocol boundaries; do not preserve retired aliases in internal logs.
 - When logging work creates, moves, or renames code files, apply local file naming policy.
 - Suppress or stabilize logs in tests through existing test hooks.
 

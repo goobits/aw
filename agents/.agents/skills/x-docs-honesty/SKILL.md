@@ -17,6 +17,9 @@ Read `.agents/policies/docs.md`, `.agents/policies/git.md`, and
 after a known code or workflow change. Use `x-consolidate-docs`
 (`.agents/skills/x-consolidate-docs/SKILL.md`) when duplicate, scattered, or
 misplaced docs need merge/delete/rehome decisions.
+Read `.agents/skills/x-consolidate/references/canonical-naming-and-duplication.md`
+when verifying terminology, concept ownership, or a completed rename against
+the maintained codebase.
 
 ## Objective
 
@@ -36,7 +39,7 @@ Ensure markdown files represent current code reality with no content bloat:
    - `rg "<term|path|command>" AGENTS.md README.md proposals .llm/docs <target paths...>`
 3. Map docs to code owners:
    - public APIs, CLIs, config files, env vars, commands, routes, package
-     exports, architecture claims, and usage examples.
+     exports, architecture claims, canonical concept names, and usage examples.
 4. Verify each claim against source:
    - API names, parameters, return values, and exported surfaces.
    - Installation, setup, dependency, and command instructions.
@@ -45,7 +48,7 @@ Ensure markdown files represent current code reality with no content bloat:
    - Links, paths, and runnable snippets.
 5. Edit only what evidence supports:
    - Fix incorrect statements.
-   - Remove obsolete or deprecated content.
+   - Remove obsolete content and retired synonyms after completed migrations.
    - Add missing critical information.
    - Preserve the local style and tone unless the user asks for a rewrite.
 
