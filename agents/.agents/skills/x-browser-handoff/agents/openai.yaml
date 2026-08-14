@@ -1,4 +1,0 @@
-interface:
-    display_name: 'Browser Agent Handoff'
-    short_description: 'Create safe browser-only work instructions'
-    default_prompt: 'Use $x-browser-handoff to turn the preceding tasks into self-contained instructions for a browser-only agent.'
